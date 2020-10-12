@@ -1,7 +1,7 @@
 import React from 'react'
-import {PackagesByCategory} from './github/getSortedPackages'
 import {Grid} from '@material-ui/core'
 import PackageItem from './PackageItem'
+import {PackagesByCategory} from '../functions/src/types'
 
 type PackageCategoriesList = {
     packagesByCategories: PackagesByCategory[]

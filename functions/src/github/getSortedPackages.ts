@@ -1,19 +1,6 @@
-type PackageName = string
-type CategoryKey = string
-type CategoryName = string
-type Category = {
-    key: CategoryKey,
-    name: CategoryName
-}
-export type Package = { name: PackageName, stats?: RepoStats }
-export type PackagesByCategory = { category: Category, packages: Package[] }
-export type RepoStats = {
-    stars: number,
-    forks: number,
-    watchers: number,
-    openIssues: number,
-    updatedAt: string
-}
+import fetch from 'node-fetch'
+import {Category, CategoryKey, PackageName, PackagesByCategory, RepoStats} from '../types'
+import * as functions from 'firebase-functions'
 
 const CATEGORIES: Category[] = [{
     key: "integration",
@@ -37,8 +24,7 @@ const CATEGORIES: Category[] = [{
 const BASE_URL = "https://raw.githubusercontent.com/hacs/default/master/"
 const BASE_GITHUB_API_URL = "https://api.github.com/repos/"
 
-
-export const getSortedPackages = async (onUpdate: (packagesList: PackagesByCategory[]) => void): Promise<void> => {
+export const getSortedPackages = async (): Promise<PackagesByCategory[]> => {
     const packagesByCategories: PackagesByCategory[] = []
     for(let category of CATEGORIES) {
         const packages = await getCategoryPackages(category.key)
@@ -50,19 +36,13 @@ export const getSortedPackages = async (onUpdate: (packagesList: PackagesByCateg
         })
     }
 
-    onUpdate(packagesByCategories)
-
     for(let packagesByCat of packagesByCategories) {
-        for(let packageName of packagesByCat.packages) {
-            await getRepoStats(packageName.name)
-
-            break
+        for(let i = 0; i < packagesByCat.packages.length; i++) {
+            packagesByCat.packages[i].stats = await getRepoStats(packagesByCat.packages[i].name)
         }
-
-        onUpdate(packagesByCategories)
     }
+    return packagesByCategories
 }
-
 
 const getCategoryPackages = async (cat: CategoryKey): Promise<PackageName[]> => {
     const result = await fetch(BASE_URL + cat)
@@ -72,14 +52,18 @@ const getCategoryPackages = async (cat: CategoryKey): Promise<PackageName[]> => 
 }
 
 const getRepoStats = async (packageName: PackageName) : Promise<RepoStats> => {
-    const result = await fetch(BASE_GITHUB_API_URL + packageName)
+    const result = await fetch(BASE_GITHUB_API_URL + packageName, {
+        headers: {
+            "Authorization": `token ${functions.config().github.token}`
+        }
+    })
     const data: any  = await result.json()
 
     return {
         forks: data.forks,
-        stars: data.stars,
+        stars: data.stargazers_count,
         watchers: data.watchers,
-        openIssues: data.stargazers_count,
+        openIssues: data.open_issues,
         updatedAt: data.updated_at
     }
 

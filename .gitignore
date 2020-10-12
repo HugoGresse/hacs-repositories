@@ -30,4 +30,4 @@ yarn-error.log*
 
 # Firebase specific
 .firebase
-
+.firebaserc

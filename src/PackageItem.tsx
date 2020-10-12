@@ -1,6 +1,6 @@
 import React from 'react'
-import {Package} from './github/getSortedPackages'
 import {Grid} from '@material-ui/core'
+import {Package} from '../functions/src/types'
 
 type PackageItemProps = {
     packageItem: Package
