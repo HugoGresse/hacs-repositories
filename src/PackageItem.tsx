@@ -1,5 +1,5 @@
 import React from 'react'
-import {Box, Grid, Typography} from '@material-ui/core'
+import {Box, Typography} from '@material-ui/core'
 import {Package} from '../functions/src/types'
 import StarRateIcon from '@material-ui/icons/StarRate'
 import VisibilityIcon from '@material-ui/icons/Visibility'
@@ -16,6 +16,7 @@ type PackageItemProps = {
 const useStyles = makeStyles(theme => ({
     container: {
         marginTop: 16,
+        width: "100%"
     },
     icon: {
         position: "relative",
@@ -35,7 +36,7 @@ const useStyles = makeStyles(theme => ({
 const PackageItem = ({packageItem}: PackageItemProps) => {
     const classes = useStyles()
 
-    return  <Grid item xs={12} className={classes.container}>
+    return  <div  className={classes.container}>
         <Typography variant="h5">
             {packageItem.name}
         </Typography>
@@ -62,7 +63,7 @@ const PackageItem = ({packageItem}: PackageItemProps) => {
                 {packageItem.stats?.updatedAtLuxon?.toRelative()}
             </Typography>
         </Box>
-    </Grid>
+    </div>
 
 }
 
