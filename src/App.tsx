@@ -4,16 +4,36 @@ import Box from '@material-ui/core/Box'
 import Container from '@material-ui/core/Container'
 import Grid from '@material-ui/core/Grid'
 import PackageCategoriesList from './PackageCategoriesList'
-import {functions} from './firebase'
+import {functions} from './firebase/firebase'
 import {Button} from '@material-ui/core'
-import {PackagesByCategory} from '../functions/src/types'
+import {getPackages, PackagesLoadResult} from './firebase/getPackages'
 
+
+/**
+ * TODO :
+ * 1. design
+ * 2. filter: stars (range), fork (range
+ * 3. search
+ * 4. debounce
+ * 5. READMe, github
+ * 6. polish
+ * @constructor
+ */
 function App() {
-    const [packagesByCategories, setPackages] = useState<PackagesByCategory[]>([])
+    const [packagesLoadResult, setPackages] = useState<PackagesLoadResult>({
+        loadSuccess: false
+    })
 
     useEffect(() => {
-        // noinspection JSIgnoredPromiseFromCall
+        const loadData = async () => {
+            const result = await getPackages()
+            if(result.loadSuccess) {
+                setPackages(result)
+            }
+        }
 
+        // noinspection JSIgnoredPromiseFromCall
+        loadData()
     } , [])
 
     return (
@@ -31,7 +51,8 @@ function App() {
                             }}>Update list</Button>
 
                         </Grid>
-                        <PackageCategoriesList packagesByCategories={packagesByCategories}/>
+                        <PackageCategoriesList packagesByCategories={packagesLoadResult.packages}/>
+
 
                     </Grid>
 
