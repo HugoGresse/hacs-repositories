@@ -1,3 +1,4 @@
+import {DateTime} from 'luxon'
 
 export type PackageName = string
 export type CategoryKey = string
@@ -13,5 +14,12 @@ export type RepoStats = {
     forks: number,
     watchers: number,
     openIssues: number,
-    updatedAt: string
+    updatedAt: string,
+    updatedAtLuxon?: DateTime,
+}
+
+
+export enum Status {
+    UPDATING = "updating",
+    UPDATED = "updated",
 }
