@@ -39,6 +39,7 @@
     ]
   },
   "devDependencies": {
-    "@types/luxon": "^1.25.0"
+    "@types/luxon": "^1.25.0",
+    "@types/react-virtualized": "^9.21.10"
   }
 }

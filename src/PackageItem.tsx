@@ -35,7 +35,7 @@ const useStyles = makeStyles(theme => ({
 const PackageItem = ({packageItem}: PackageItemProps) => {
     const classes = useStyles()
 
-    return  <Grid item xs={12} className={classes.container}>
+    return  <div className={classes.container}>
         <Typography variant="h5">
             {packageItem.name}
         </Typography>
@@ -62,7 +62,7 @@ const PackageItem = ({packageItem}: PackageItemProps) => {
                 {packageItem.stats?.updatedAtLuxon?.toRelative()}
             </Typography>
         </Box>
-    </Grid>
+    </div>
 
 }
 
