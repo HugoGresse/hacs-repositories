@@ -3,7 +3,9 @@ import { PackagesByCategory } from "../../functions/src/types";
 import { DateTime } from "luxon";
 import { PackagesLoadResult } from "../packages/types";
 
-export const getPackages = async (): Promise<PackagesLoadResult> => {
+export const getPackagesFromFirestore = async (): Promise<
+  PackagesLoadResult
+> => {
   const snapshot = await firestore.collection("data").doc("document").get();
 
   if (snapshot.exists) {

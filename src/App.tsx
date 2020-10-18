@@ -1,17 +1,14 @@
-import React, {useEffect, useState} from 'react'
+import React, {useEffect} from 'react'
 import Grid from '@material-ui/core/Grid'
 import PackageCategoriesList from './PackageCategoriesList'
 import {functions} from './firebase/firebase'
 import {Button} from '@material-ui/core'
-import { Provider } from 'react-redux'
-import {getPackages} from './firebase/getPackages'
+import {useDispatch} from 'react-redux'
 import AppLayout from './AppLayout'
-import {store} from './store'
-import {PackagesLoadResult} from './packages/types'
+import {loadPackages} from './packages/loadActions'
 
 /**
  * TODO :
- * 1. design
  * 2. filter: stars (range), fork (range
  * 3. search
  * 4. debounce
@@ -20,24 +17,13 @@ import {PackagesLoadResult} from './packages/types'
  * @constructor
  */
 function App() {
-    const [packagesLoadResult, setPackages] = useState<PackagesLoadResult>({
-        loadSuccess: false
-    })
+    const dispatch = useDispatch()
 
     useEffect(() => {
-        const loadData = async () => {
-            const result = await getPackages()
-            if(result.loadSuccess) {
-                setPackages(result)
-            }
-        }
-
-        // noinspection JSIgnoredPromiseFromCall
-        loadData()
+        dispatch(loadPackages())
     } , [])
 
-    return <Provider store={store}>
-        <AppLayout>
+    return <AppLayout>
         <Grid container spacing={3}>
             <Grid item xs={12}
             >
@@ -48,12 +34,11 @@ function App() {
                 }}>Update list</Button>
 
             </Grid>
-            <PackageCategoriesList packagesByCategories={packagesLoadResult.packages}/>
+            <PackageCategoriesList />
 
 
         </Grid>
     </AppLayout>
-    </Provider>
 }
 
 export default App
