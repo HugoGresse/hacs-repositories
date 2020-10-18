@@ -3,9 +3,11 @@ import Grid from '@material-ui/core/Grid'
 import PackageCategoriesList from './PackageCategoriesList'
 import {functions} from './firebase/firebase'
 import {Button} from '@material-ui/core'
-import {getPackages, PackagesLoadResult} from './firebase/getPackages'
+import { Provider } from 'react-redux'
+import {getPackages} from './firebase/getPackages'
 import AppLayout from './AppLayout'
-
+import {store} from './store'
+import {PackagesLoadResult} from './packages/types'
 
 /**
  * TODO :
@@ -34,7 +36,8 @@ function App() {
         loadData()
     } , [])
 
-    return <AppLayout>
+    return <Provider store={store}>
+        <AppLayout>
         <Grid container spacing={3}>
             <Grid item xs={12}
             >
@@ -50,6 +53,7 @@ function App() {
 
         </Grid>
     </AppLayout>
+    </Provider>
 }
 
 export default App
