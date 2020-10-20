@@ -1,5 +1,5 @@
 import React from 'react'
-import {Box, Typography} from '@material-ui/core'
+import {Typography} from '@material-ui/core'
 import {Package} from '../functions/src/types'
 import StarRateIcon from '@material-ui/icons/StarRate'
 import VisibilityIcon from '@material-ui/icons/Visibility'
@@ -11,7 +11,6 @@ import {makeStyles} from '@material-ui/core/styles'
 type PackageItemProps = {
     packageItem: Package
 }
-
 
 const useStyles = makeStyles(theme => ({
     container: {
@@ -26,10 +25,16 @@ const useStyles = makeStyles(theme => ({
         border: "1px solid #CCCCCC",
         padding: "0 6px 3px",
         marginRight: 8,
+        marginBottom: 8,
         borderRadius: 30,
         color: "#888",
         display: "flex",
         alignItems: "baseline",
+    },
+    iconsContainer: {
+        display: "flex",
+        flexDirection: "row",
+        flexWrap:"wrap"
     }
 }))
 
@@ -37,11 +42,11 @@ const PackageItem = ({packageItem}: PackageItemProps) => {
     const classes = useStyles()
 
     return  <div  className={classes.container}>
-        <Typography variant="h5">
+        <Typography variant="h5" gutterBottom>
             {packageItem.name}
         </Typography>
 
-        <Box display="flex" flexDirection="horizontal">
+        <div className={classes.iconsContainer}>
             <Typography className={classes.iconContainer}>
                 <StarRateIcon className={classes.icon}/>
                 {packageItem.stats?.stars}
@@ -62,7 +67,7 @@ const PackageItem = ({packageItem}: PackageItemProps) => {
                 <UpdateIcon  className={classes.icon}/>
                 {packageItem.stats?.updatedAtLuxon?.toRelative()}
             </Typography>
-        </Box>
+        </div>
     </div>
 
 }

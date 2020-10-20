@@ -1,5 +1,5 @@
 import React from 'react'
-import {Box, CircularProgress, Typography} from '@material-ui/core'
+import {Box, Typography} from '@material-ui/core'
 import PackageItem from './PackageItem'
 import {makeStyles} from '@material-ui/core/styles'
 import LazyLoad from 'react-lazyload'
@@ -31,13 +31,12 @@ const PackageCategoriesList = ({}: PackageCategoriesList) => {
     return <Grid container spacing={4}>
 
         <Grid item xs={12} sm={4}>
-            <CircularProgress />
             <FilterBar />
         </Grid>
         <Grid item xs={12} sm={8}>
             {
                 packagesByCategories.map(({category, packages}) => {
-                    return <Box width="100%" key={category.key}>
+                    return <Box width="100%" key={category.key} padding={2}>
                         <LazyLoad height={packages.length * lineHeight}>
                             <Typography variant="h1" className={classes.title}>
                                 {category.name}

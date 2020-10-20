@@ -10,7 +10,7 @@ import {
 import {setFilter} from './packages/filterActions'
 import {FilterFork, FilterOpenIssues, FilterStar, FilterTypes, FilterWatchers} from './packages/types'
 import {FilterComponent} from './components/FilterComponent'
-import {Box, Typography} from '@material-ui/core'
+import {Box, CircularProgress, Typography} from '@material-ui/core'
 import _ from 'lodash'
 import {forceCheck} from 'react-lazyload'
 
@@ -62,6 +62,7 @@ const FilterBar = ({}: FilterBarProps) => {
 
     const onFilterChange = (filter: FilterTypes) => (event: React.ChangeEvent<{}>, value: number | number[]) => {
         if (Array.isArray(value)) {
+            // this allow the filter on redux to be debounced while maintaining up to date react state update on drag
             setFiltersValues({
                 ...filtersValues,
                 [filter]: value
@@ -71,9 +72,7 @@ const FilterBar = ({}: FilterBarProps) => {
     }
 
     if (!minMaxFiltersValues || !filterInitCompleted) {
-        return <>
-            Loading...
-        </>
+        return <Box padding={4}> <CircularProgress/></Box>
     }
     return <Box padding={4}>
         <Typography variant="h4" gutterBottom>
