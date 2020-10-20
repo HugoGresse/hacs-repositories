@@ -1,6 +1,7 @@
 import produce from "immer";
 import { PackagesByCategory } from "../../functions/src/types";
 import {
+  FILTER_INIT_COMPLETED,
   FilterFork,
   FilterOpenIssues,
   FilterStar,
@@ -20,10 +21,11 @@ export interface PackagesState {
   loaded: boolean;
   updatedAt: null | DateTime;
   filters: {
-    starsRange: number[];
-    issuesRange: number[];
-    forksRange: number[];
-    watchersRange: number[];
+    [FilterStar]: number[];
+    [FilterWatchers]: number[];
+    [FilterOpenIssues]: number[];
+    [FilterFork]: number[];
+    initCompleted: boolean;
   };
   sorts: {};
 }
@@ -34,10 +36,11 @@ const initState: PackagesState = {
   loaded: false,
   updatedAt: null,
   filters: {
-    starsRange: [0, 0],
-    issuesRange: [0, 0],
-    forksRange: [0, 0],
-    watchersRange: [0, 0],
+    [FilterStar]: [0, 0],
+    [FilterWatchers]: [0, 0],
+    [FilterOpenIssues]: [0, 0],
+    [FilterFork]: [0, 0],
+    initCompleted: false,
   },
   sorts: {},
 };
@@ -64,16 +67,13 @@ export const packagesReducer = produce(
         const { payload } = action as SetFilterAction;
         switch (payload.filter) {
           case FilterFork:
-            draft.filters.forksRange = [payload.valueMin, payload.valueMax];
-            break;
           case FilterStar:
-            draft.filters.starsRange = [payload.valueMin, payload.valueMax];
-            break;
           case FilterWatchers:
-            draft.filters.watchersRange = [payload.valueMin, payload.valueMax];
-            break;
           case FilterOpenIssues:
-            draft.filters.issuesRange = [payload.valueMin, payload.valueMax];
+            draft.filters[payload.filter] = [
+              payload.valueMin,
+              payload.valueMax,
+            ];
             break;
           default:
             console.error(
@@ -83,6 +83,9 @@ export const packagesReducer = produce(
         }
         break;
       }
+      case FILTER_INIT_COMPLETED:
+        draft.filters.initCompleted = true;
+        break;
       default:
         break;
     }

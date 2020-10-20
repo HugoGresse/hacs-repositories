@@ -1,80 +1,119 @@
-import React from 'react'
-import {Slider, Typography} from '@material-ui/core'
+import React, {useEffect, useState} from 'react'
 import {useDispatch, useSelector} from 'react-redux'
-import {getMinMaxFiltersValuesSelector, getStarsFilterValuesSelector} from './packages/packagesSelectors'
+import {
+    getForksFilterValuesSelector,
+    getMinMaxFiltersValuesSelector,
+    getOpenIssuesFilterValuesSelector,
+    getStarsFilterValuesSelector,
+    getWatchersFilterValuesSelector, isFilterInitCompletedSelector
+} from './packages/packagesSelectors'
 import {setFilter} from './packages/filterActions'
-import {FilterFork, FilterStar, FilterTypes} from './packages/types'
+import {FilterFork, FilterOpenIssues, FilterStar, FilterTypes, FilterWatchers} from './packages/types'
+import {FilterComponent} from './components/FilterComponent'
+import {Box, Typography} from '@material-ui/core'
+import _ from 'lodash'
+import {forceCheck} from 'react-lazyload'
 
-const valueText = (value: number, index: number) => `${value}`
+// TODO :
+// - component type (integration, etc)
+// - fix css on resize and footer
 
-const FilterBar = () => {
+type FilterBarProps = {}
+
+const FilterBar = ({}: FilterBarProps) => {
     const dispatch = useDispatch()
+    const filterInitCompleted = useSelector(isFilterInitCompletedSelector)
     const starsValue = useSelector(getStarsFilterValuesSelector)
+    const watchersValue = useSelector(getWatchersFilterValuesSelector)
+    const forksValue = useSelector(getForksFilterValuesSelector)
+    const openIssuesValue = useSelector(getOpenIssuesFilterValuesSelector)
     const minMaxFiltersValues = useSelector(getMinMaxFiltersValuesSelector)
 
-    console.log("minMaxfilters", minMaxFiltersValues)
+    const [filtersValues, setFiltersValues] = useState({
+        [FilterStar]: [0, 0],
+        [FilterWatchers]: [0, 0],
+        [FilterFork]: [0, 0],
+        [FilterOpenIssues]: [0, 0],
+    })
+    const [filtersInitiated, setFiltersInitiated] = useState(false)
+
+    useEffect(() => {
+        if (!filterInitCompleted || filtersInitiated) {
+            return
+        }
+        setFiltersValues({
+            [FilterStar]: starsValue,
+            [FilterWatchers]: watchersValue,
+            [FilterFork]: forksValue,
+            [FilterOpenIssues]: openIssuesValue,
+        })
+        setFiltersInitiated(true)
+    }, [filterInitCompleted, filtersInitiated])
+
+    const [dispatchDebounced] = useState(() =>
+        _.debounce((arfs) => {
+            dispatch(arfs)
+            forceCheck()
+        }, 200, {
+            leading: false,
+            trailing: true
+        })
+    )
 
     const onFilterChange = (filter: FilterTypes) => (event: React.ChangeEvent<{}>, value: number | number[]) => {
         if (Array.isArray(value)) {
-            dispatch(setFilter(filter, value[0], value[1]))
+            setFiltersValues({
+                ...filtersValues,
+                [filter]: value
+            })
+            dispatchDebounced(setFilter(filter, value[0], value[1]))
         }
     }
 
-    // TODO : init filters with max values
-
-    if (!minMaxFiltersValues) {
+    if (!minMaxFiltersValues || !filterInitCompleted) {
         return <>
             Loading...
         </>
     }
-
-    return <>
+    return <Box padding={4}>
+        <Typography variant="h4" gutterBottom>
+            Filters
+        </Typography>
 
         <FilterComponent
             filter={FilterStar}
             name="Stars"
-            value={starsValue}
+            value={filtersValues[FilterStar]}
             minValue={minMaxFiltersValues.stars.min}
             maxValue={minMaxFiltersValues.stars.max}
             onFilterChange={onFilterChange}
         />
 
-        {//TODO rest of the filters :D
-             }
-
-    </>
-}
-
-type FilterComponentProps = {
-    filter: FilterTypes,
-    name: string,
-    value: number[],
-    minValue: number,
-    maxValue: number,
-    onFilterChange : (filter: FilterTypes) => (event: React.ChangeEvent<{}>, value: number | number[]) => void
-}
-
-const FilterComponent = ({filter,
-                         name,
-                         value,
-                         minValue,
-                         maxValue,
-                         onFilterChange}: FilterComponentProps
-                         ) => {
-    return <>
-        <Typography id="range-slider" gutterBottom>
-            {name} {value[0]} {value[1]}
-        </Typography>
-        <Slider
-            value={[value[0], value[1]]}
-            onChange={onFilterChange(filter)}
-            min={minValue}
-            max={maxValue}
-            valueLabelDisplay="auto"
-            aria-labelledby="range-slider"
-            getAriaValueText={valueText}
+        <FilterComponent
+            filter={FilterWatchers}
+            name="Watchers"
+            value={filtersValues[FilterWatchers]}
+            minValue={minMaxFiltersValues.watchers.min}
+            maxValue={minMaxFiltersValues.watchers.max}
+            onFilterChange={onFilterChange}
         />
-    </>
+        <FilterComponent
+            filter={FilterFork}
+            name="Forks"
+            value={filtersValues[FilterFork]}
+            minValue={minMaxFiltersValues.forks.min}
+            maxValue={minMaxFiltersValues.forks.max}
+            onFilterChange={onFilterChange}
+        />
+        <FilterComponent
+            filter={FilterOpenIssues}
+            name="Open issues"
+            value={filtersValues[FilterOpenIssues]}
+            minValue={minMaxFiltersValues.openIssues.min}
+            maxValue={minMaxFiltersValues.openIssues.max}
+            onFilterChange={onFilterChange}
+        />
+    </Box>
 }
 
 export default FilterBar

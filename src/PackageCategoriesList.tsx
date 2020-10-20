@@ -1,13 +1,12 @@
 import React from 'react'
-import {Box, Typography} from '@material-ui/core'
+import {Box, CircularProgress, Typography} from '@material-ui/core'
 import PackageItem from './PackageItem'
-import {PackagesByCategory} from '../functions/src/types'
 import {makeStyles} from '@material-ui/core/styles'
 import LazyLoad from 'react-lazyload'
 import Grid from '@material-ui/core/Grid/Grid'
 import FilterBar from './FilterBar'
 import {useSelector} from 'react-redux'
-import {getPackagesByCategorySelector} from './packages/packagesSelectors'
+import {getVisiblePackagesByCategorySelector, isPackagesByCategoryLoadingSelector} from './packages/packagesSelectors'
 
 type PackageCategoriesList = {
 }
@@ -26,12 +25,14 @@ const lineHeight = 70
 
 const PackageCategoriesList = ({}: PackageCategoriesList) => {
     const classes = useStyles()
-    const packagesByCategories = useSelector(getPackagesByCategorySelector)
+    const isLoading = useSelector(isPackagesByCategoryLoadingSelector)
+    const packagesByCategories = useSelector(getVisiblePackagesByCategorySelector)
 
-    return <Grid container>
+    return <Grid container spacing={4}>
 
         <Grid item xs={12} sm={4}>
-            <FilterBar/>
+            <CircularProgress />
+            <FilterBar />
         </Grid>
         <Grid item xs={12} sm={8}>
             {

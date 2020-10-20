@@ -5,6 +5,7 @@ export const LOAD_PACKAGES_START = "packages/load/start";
 export const LOAD_PACKAGES_END = "packages/load/end";
 export const CLEAR_FILTER = "packages/filter/clear";
 export const SET_FILTER = "packages/filter/set";
+export const FILTER_INIT_COMPLETED = "packages/filter/initCompleted";
 
 export const FilterStar = "filterStar";
 export const FilterFork = "filterFork";
@@ -46,9 +47,13 @@ export interface SetFilterAction {
     filter: FilterTypes;
   };
 }
+export interface FilterInitCompleted {
+  type: typeof FILTER_INIT_COMPLETED;
+}
 
 export type PackagesActionTypes =
   | LoadPackagesStartAction
   | LoadPackagesEndAction
   | ClearFilterAction
-  | SetFilterAction;
+  | SetFilterAction
+  | FilterInitCompleted;

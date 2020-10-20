@@ -1,5 +1,6 @@
 import { getPackagesFromFirestore } from "../firebase/getPackagesFromFirestore";
 import {
+  FILTER_INIT_COMPLETED,
   FilterFork,
   FilterOpenIssues,
   FilterStar,
@@ -60,5 +61,8 @@ export const loadPackages = () => async (
       valueMin: filterValues.openIssues.min,
       valueMax: filterValues.openIssues.max,
     },
+  });
+  dispatch({
+    type: FILTER_INIT_COMPLETED,
   });
 };

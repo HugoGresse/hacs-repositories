@@ -1,17 +1,88 @@
 import { PackagesState } from "./packagesReducer";
 import { createSelector } from "reselect";
-import { Package } from "../../functions/src/types";
+import { Package, PackagesByCategory } from "../../functions/src/types";
 import { State } from "../rootReducer";
+import {
+  FilterFork,
+  FilterOpenIssues,
+  FilterStar,
+  FilterWatchers,
+} from "./types";
 
 const getPackagesState = (state: State): PackagesState => state.packages;
 
+export const getFiltersSelector = (state: State) =>
+  getPackagesState(state).filters;
 export const getStarsFilterValuesSelector = (state: State) =>
-  getPackagesState(state).filters.starsRange;
+  getFiltersSelector(state)[FilterStar];
+export const getWatchersFilterValuesSelector = (state: State) =>
+  getFiltersSelector(state)[FilterWatchers];
+export const getForksFilterValuesSelector = (state: State) =>
+  getFiltersSelector(state)[FilterFork];
+export const getOpenIssuesFilterValuesSelector = (state: State) =>
+  getFiltersSelector(state)[FilterOpenIssues];
+export const isFilterInitCompletedSelector = (state: State) =>
+  getFiltersSelector(state).initCompleted;
 
+export const isPackagesByCategoryLoadingSelector = (state: State) =>
+  getPackagesState(state).loading;
 export const getPackagesByCategorySelector = (state: State) =>
   getPackagesState(state).packagesByCategories;
 
 // Memoized selectors
+
+export const getVisiblePackagesByCategorySelector = createSelector(
+  getPackagesByCategorySelector,
+  getStarsFilterValuesSelector,
+  getWatchersFilterValuesSelector,
+  getForksFilterValuesSelector,
+  getOpenIssuesFilterValuesSelector,
+  (
+    packagesByCategory,
+    starValues,
+    watchersValues,
+    forksValues,
+    openIssuesValues
+  ) => {
+    let starsOutOfRange = false;
+    let watchersOutOfRange = false;
+    let forksOutOfRange = false;
+    let openIssuesOutOfRange = false;
+    return packagesByCategory.reduce((acc, packageByCat) => {
+      const packages = packageByCat.packages.filter((packageItem) => {
+        if (!packageItem.stats) {
+          return false;
+        }
+        starsOutOfRange =
+          packageItem.stats.stars < starValues[0] ||
+          packageItem.stats.stars > starValues[1];
+        watchersOutOfRange =
+          packageItem.stats.watchers < watchersValues[0] ||
+          packageItem.stats.watchers > watchersValues[1];
+        forksOutOfRange =
+          packageItem.stats.forks < forksValues[0] ||
+          packageItem.stats.forks > forksValues[1];
+        openIssuesOutOfRange =
+          packageItem.stats.openIssues < openIssuesValues[0] ||
+          packageItem.stats.openIssues > openIssuesValues[1];
+
+        return (
+          !starsOutOfRange &&
+          !watchersOutOfRange &&
+          !forksOutOfRange &&
+          !openIssuesOutOfRange
+        );
+      });
+      if (packages.length > 0) {
+        acc.push({
+          category: packageByCat.category,
+          packages,
+        });
+      }
+      return acc;
+    }, [] as PackagesByCategory[]);
+  }
+);
 
 export const getPackagesArraySelector = createSelector(
   getPackagesByCategorySelector,
