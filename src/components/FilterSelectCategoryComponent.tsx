@@ -1,7 +1,9 @@
 import React from 'react'
-import {Chip, FormControl, Input, InputLabel, MenuItem, Select} from '@material-ui/core'
+import {Chip, FormControl,  MenuItem, Select} from '@material-ui/core'
 import {Category} from '../../functions/src/types'
 import {makeStyles} from '@material-ui/core/styles'
+import FilterName from './FilterName'
+import {HacsInput} from './HacsInputBase'
 
 type FilterSelectCategoryComponentProps = {
     onSelectChange: (categoriesSelected: string[]) => void
@@ -30,7 +32,8 @@ function getStyles(name: Category, selectedValues: Category[]) {
 
 const useStyles = makeStyles(theme => ({
     formControl: {
-        width: '100%'
+        width: '100%',
+        marginBottom: 16
     },
     chips: {
         display: 'flex',
@@ -45,15 +48,15 @@ const FilterSelectCategoryComponent = ({onSelectChange, values, selectedValues}:
     }
 
     return <FormControl className={classes.formControl}>
-        <InputLabel id="package-type">Package type</InputLabel>
+        <FilterName>Package type{selectedValues.length > 1 ? 's' : ''}</FilterName>
         <Select
             labelId="package-type"
             id="package-type"
             multiple
             value={selectedValues.map(value => value.key)}
             onChange={onPackageTypeChange}
-            input={<Input id="select-multiple-chip"/>}
-            renderValue={(selected) => (
+            input={<HacsInput id="select-multiple-chip"/>}
+            renderValue={() => (
                 <div className={classes.chips}>
                     {selectedValues.map((value) => (
                         <Chip key={value.key} label={value.name}/>

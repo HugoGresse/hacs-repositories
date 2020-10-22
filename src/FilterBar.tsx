@@ -100,7 +100,6 @@ const FilterBar = ({}: FilterBarProps) => {
             selectedValues={selectedCategories}
             values={availableCategories}
             />
-
         <FilterRangeComponent
             filter={FilterStar}
             name="Stars"
@@ -109,7 +108,6 @@ const FilterBar = ({}: FilterBarProps) => {
             maxValue={minMaxFiltersValues.stars.max}
             onFilterChange={onFilterChange}
         />
-
         <FilterRangeComponent
             filter={FilterWatchers}
             name="Watchers"
