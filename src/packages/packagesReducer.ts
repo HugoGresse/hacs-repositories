@@ -1,17 +1,20 @@
 import produce from "immer";
-import { PackagesByCategory } from "../../functions/src/types";
+import { Category, PackagesByCategory } from "../../functions/src/types";
 import {
   FILTER_INIT_COMPLETED,
   FilterFork,
   FilterOpenIssues,
+  FilterPackageCategories,
   FilterStar,
   FilterWatchers,
   LOAD_PACKAGES_END,
   LOAD_PACKAGES_START,
   LoadPackagesEndAction,
   PackagesActionTypes,
-  SET_FILTER,
-  SetFilterAction,
+  SET_FILTER_RANGE,
+  SET_FILTER_SELECT,
+  SetFilterRangeAction,
+  SetFilterSelectAction,
 } from "./types";
 import { DateTime } from "luxon";
 
@@ -25,6 +28,7 @@ export interface PackagesState {
     [FilterWatchers]: number[];
     [FilterOpenIssues]: number[];
     [FilterFork]: number[];
+    [FilterPackageCategories]: Category[];
     initCompleted: boolean;
   };
   sorts: {};
@@ -40,6 +44,7 @@ const initState: PackagesState = {
     [FilterWatchers]: [0, 0],
     [FilterOpenIssues]: [0, 0],
     [FilterFork]: [0, 0],
+    [FilterPackageCategories]: [],
     initCompleted: false,
   },
   sorts: {},
@@ -63,8 +68,8 @@ export const packagesReducer = produce(
         }
         break;
       }
-      case SET_FILTER: {
-        const { payload } = action as SetFilterAction;
+      case SET_FILTER_RANGE: {
+        const { payload } = action as SetFilterRangeAction;
         switch (payload.filter) {
           case FilterFork:
           case FilterStar:
@@ -77,7 +82,21 @@ export const packagesReducer = produce(
             break;
           default:
             console.error(
-              "This filter is not managed in the reducer",
+              "This filter range is not managed in the reducer",
+              payload.filter
+            );
+        }
+        break;
+      }
+      case SET_FILTER_SELECT: {
+        const { payload } = action as SetFilterSelectAction;
+        switch (payload.filter) {
+          case FilterPackageCategories:
+            draft.filters[payload.filter] = payload.selected as Category[];
+            break;
+          default:
+            console.error(
+              "This filter select is not managed in the reducer",
               payload.filter
             );
         }

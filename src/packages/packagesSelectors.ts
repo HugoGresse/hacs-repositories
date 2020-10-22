@@ -5,6 +5,7 @@ import { State } from "../rootReducer";
 import {
   FilterFork,
   FilterOpenIssues,
+  FilterPackageCategories,
   FilterStar,
   FilterWatchers,
 } from "./types";
@@ -21,6 +22,8 @@ export const getForksFilterValuesSelector = (state: State) =>
   getFiltersSelector(state)[FilterFork];
 export const getOpenIssuesFilterValuesSelector = (state: State) =>
   getFiltersSelector(state)[FilterOpenIssues];
+export const getSelectedCategoriesSelector = (state: State) =>
+  getFiltersSelector(state)[FilterPackageCategories];
 export const isFilterInitCompletedSelector = (state: State) =>
   getFiltersSelector(state).initCompleted;
 
@@ -37,18 +40,27 @@ export const getVisiblePackagesByCategorySelector = createSelector(
   getWatchersFilterValuesSelector,
   getForksFilterValuesSelector,
   getOpenIssuesFilterValuesSelector,
+  getSelectedCategoriesSelector,
   (
     packagesByCategory,
     starValues,
     watchersValues,
     forksValues,
-    openIssuesValues
+    openIssuesValues,
+    selectedCategories
   ) => {
     let starsOutOfRange = false;
     let watchersOutOfRange = false;
     let forksOutOfRange = false;
     let openIssuesOutOfRange = false;
     return packagesByCategory.reduce((acc, packageByCat) => {
+      if (
+        selectedCategories.length > 0 &&
+        !selectedCategories.includes(packageByCat.category)
+      ) {
+        return acc;
+      }
+
       const packages = packageByCat.packages.filter((packageItem) => {
         if (!packageItem.stats) {
           return false;
@@ -139,4 +151,10 @@ export const getMinMaxFiltersValuesSelector = createSelector(
       },
     };
   }
+);
+
+export const getAvailableCategoriesSelector = createSelector(
+  getPackagesByCategorySelector,
+  (packagesByCategory) =>
+    packagesByCategory.map((packagesByCat) => packagesByCat.category)
 );

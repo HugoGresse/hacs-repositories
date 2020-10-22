@@ -8,7 +8,7 @@ import {
   LOAD_PACKAGES_END,
   LOAD_PACKAGES_START,
   PackagesActionTypes,
-  SET_FILTER,
+  SET_FILTER_RANGE,
 } from "./types";
 import { getMinMaxFiltersValuesSelector } from "./packagesSelectors";
 import { State } from "../rootReducer";
@@ -31,7 +31,7 @@ export const loadPackages = () => async (
   const filterValues = getMinMaxFiltersValuesSelector(getState() as State);
 
   dispatch({
-    type: SET_FILTER,
+    type: SET_FILTER_RANGE,
     payload: {
       filter: FilterStar,
       valueMin: filterValues.stars.min,
@@ -39,7 +39,7 @@ export const loadPackages = () => async (
     },
   });
   dispatch({
-    type: SET_FILTER,
+    type: SET_FILTER_RANGE,
     payload: {
       filter: FilterFork,
       valueMin: filterValues.forks.min,
@@ -47,7 +47,7 @@ export const loadPackages = () => async (
     },
   });
   dispatch({
-    type: SET_FILTER,
+    type: SET_FILTER_RANGE,
     payload: {
       filter: FilterWatchers,
       valueMin: filterValues.watchers.min,
@@ -55,7 +55,7 @@ export const loadPackages = () => async (
     },
   });
   dispatch({
-    type: SET_FILTER,
+    type: SET_FILTER_RANGE,
     payload: {
       filter: FilterOpenIssues,
       valueMin: filterValues.openIssues.min,

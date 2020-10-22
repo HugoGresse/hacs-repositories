@@ -1,15 +1,15 @@
-import {FilterTypes} from '../packages/types'
+import {FilterRangeTypes} from '../packages/types'
 import React from 'react'
 import {Slider, Typography} from '@material-ui/core'
 import {makeStyles} from '@material-ui/core/styles'
 
 type FilterComponentProps = {
-    filter: FilterTypes,
+    filter: FilterRangeTypes,
     name: string,
     value: number[],
     minValue: number,
     maxValue: number,
-    onFilterChange: (filter: FilterTypes) => (event: React.ChangeEvent<{}>, value: number | number[]) => void
+    onFilterChange: (filter: FilterRangeTypes) => (event: React.ChangeEvent<{}>, value: number | number[]) => void
 }
 
 const valueText = (value: number, index: number) => `${value}`
@@ -27,7 +27,7 @@ const useStyles = makeStyles(theme => ({
     }
 }))
 
-export const FilterComponent = ({
+export const FilterRangeComponent = ({
                                     filter,
                                     name,
                                     value,

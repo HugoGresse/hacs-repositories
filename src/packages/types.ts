@@ -1,22 +1,32 @@
-import { PackagesByCategory, Status } from "../../functions/src/types";
+import {
+  Category,
+  PackagesByCategory,
+  Status,
+} from "../../functions/src/types";
 import firebase from "firebase";
+import { ThunkAction } from "redux-thunk";
+import { PackagesState } from "./packagesReducer";
 
 export const LOAD_PACKAGES_START = "packages/load/start";
 export const LOAD_PACKAGES_END = "packages/load/end";
 export const CLEAR_FILTER = "packages/filter/clear";
-export const SET_FILTER = "packages/filter/set";
+export const SET_FILTER_RANGE = "packages/filter/setRange";
+export const SET_FILTER_SELECT = "packages/filter/setSelect";
 export const FILTER_INIT_COMPLETED = "packages/filter/initCompleted";
 
 export const FilterStar = "filterStar";
 export const FilterFork = "filterFork";
 export const FilterWatchers = "filterWatchers";
 export const FilterOpenIssues = "filterOpenIssues";
+export const FilterPackageCategories = "filterPackageCategories";
 
-export type FilterTypes =
+export type FilterRangeTypes =
   | typeof FilterStar
   | typeof FilterFork
   | typeof FilterWatchers
   | typeof FilterOpenIssues;
+
+export type FilterSelectTypes = typeof FilterPackageCategories;
 
 export type PackagesLoadResult = {
   packages?: PackagesByCategory[];
@@ -36,15 +46,23 @@ export interface LoadPackagesEndAction {
 
 export interface ClearFilterAction {
   type: typeof CLEAR_FILTER;
-  payload: FilterTypes;
+  payload: FilterRangeTypes;
 }
 
-export interface SetFilterAction {
-  type: typeof SET_FILTER;
+export interface SetFilterRangeAction {
+  type: typeof SET_FILTER_RANGE;
   payload: {
     valueMin: number;
     valueMax: number;
-    filter: FilterTypes;
+    filter: FilterRangeTypes;
+  };
+}
+
+export interface SetFilterSelectAction {
+  type: typeof SET_FILTER_SELECT;
+  payload: {
+    selected: string[] | Category[];
+    filter: FilterSelectTypes;
   };
 }
 export interface FilterInitCompleted {
@@ -55,5 +73,6 @@ export type PackagesActionTypes =
   | LoadPackagesStartAction
   | LoadPackagesEndAction
   | ClearFilterAction
-  | SetFilterAction
+  | SetFilterRangeAction
+  | SetFilterSelectAction
   | FilterInitCompleted;

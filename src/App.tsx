@@ -9,12 +9,11 @@ import {loadPackages} from './packages/loadActions'
 
 /**
  * TODO :
- * 2. filter: stars (range), fork (range
  * 3. search
- * 4. debounce
+ * 4. update list behavior
+ * 5. More info on the packages (title/description?)
  * 5. READMe, github
- * 6. polish
- * @constructor
+ * 6. polish (colors?)
  */
 function App() {
     const dispatch = useDispatch()
