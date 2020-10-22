@@ -1,11 +1,12 @@
 import React from 'react'
-import {Typography} from '@material-ui/core'
+import {Link, Typography} from '@material-ui/core'
 import {Package} from '../functions/src/types'
 import StarRateIcon from '@material-ui/icons/StarRate'
 import VisibilityIcon from '@material-ui/icons/Visibility'
 import MergeTypeIcon from '@material-ui/icons/MergeType';
 import BugReportIcon from '@material-ui/icons/BugReport';
 import UpdateIcon from '@material-ui/icons/Update';
+import CopyrightIcon from '@material-ui/icons/Copyright';
 import {makeStyles} from '@material-ui/core/styles'
 
 type PackageItemProps = {
@@ -23,7 +24,7 @@ const useStyles = makeStyles(theme => ({
     },
     iconContainer: {
         border: "1px solid #CCCCCC",
-        padding: "0 6px 3px",
+        padding: "0 6px 5px",
         marginRight: 8,
         marginBottom: 8,
         borderRadius: 30,
@@ -43,7 +44,12 @@ const PackageItem = ({packageItem}: PackageItemProps) => {
 
     return  <div  className={classes.container}>
         <Typography variant="h5" gutterBottom>
+            <Link href={packageItem.info?.url} title={packageItem.name}>
             {packageItem.name}
+            </Link>
+        </Typography>
+        <Typography  gutterBottom>
+            {packageItem.info?.description}
         </Typography>
 
         <div className={classes.iconsContainer}>
@@ -63,6 +69,10 @@ const PackageItem = ({packageItem}: PackageItemProps) => {
                 <BugReportIcon  className={classes.icon}/>
                 {packageItem.stats?.openIssues}
             </Typography>
+            {packageItem.info?.license && <Typography className={classes.iconContainer}>
+                <CopyrightIcon  className={classes.icon}/>
+                {packageItem.info?.license}
+            </Typography>}
             <Typography className={classes.iconContainer}>
                 <UpdateIcon  className={classes.icon}/>
                 {packageItem.stats?.updatedAtLuxon?.toRelative()}

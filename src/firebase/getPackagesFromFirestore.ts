@@ -17,16 +17,21 @@ export const getPackagesFromFirestore = async (): Promise<
       packages: parsedRepos.map((item) => ({
         category: item.category,
         packages: item.packages.map((pack) => {
-          if (!pack.stats) {
-            return pack;
-          }
-          return {
-            name: pack.name,
-            stats: {
+          const packageCopy = {
+            ...pack,
+          };
+          if (pack.stats) {
+            packageCopy.stats = {
               ...pack.stats,
               updatedAtLuxon: DateTime.fromISO(pack.stats.updatedAt),
-            },
-          };
+            };
+          }
+          if (pack.info) {
+            packageCopy.info = {
+              ...pack.info,
+            };
+          }
+          return packageCopy;
         }),
       })),
       status: data.status,
