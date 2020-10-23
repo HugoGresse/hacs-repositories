@@ -23,11 +23,9 @@ const useStyles = makeStyles(theme => ({
         top: 6
     },
     iconContainer: {
-        border: "1px solid #CCCCCC",
-        padding: "0 6px 5px",
+        padding: "0 6px 0 0",
         marginRight: 8,
         marginBottom: 8,
-        borderRadius: 30,
         color: "#888",
         display: "flex",
         alignItems: "baseline",

@@ -4,8 +4,6 @@ import {
   Status,
 } from "../../functions/src/types";
 import firebase from "firebase";
-import { ThunkAction } from "redux-thunk";
-import { PackagesState } from "./packagesReducer";
 
 export const LOAD_PACKAGES_START = "packages/load/start";
 export const LOAD_PACKAGES_END = "packages/load/end";

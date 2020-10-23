@@ -9,18 +9,17 @@ import {loadPackages} from './packages/loadActions'
 
 /**
  * TODO :
- * 3. search
+ * 3. search + remove border
  * 4. update list behavior
- * 5. More info on the packages (title/description?)
  * 5. READMe, github
- * 6. polish (colors?)
+ * 6. polish (colors?) + footer
  */
 function App() {
     const dispatch = useDispatch()
 
     useEffect(() => {
         dispatch(loadPackages())
-    } , [])
+    } , [dispatch])
 
     return <AppLayout>
         <Grid container spacing={3}>

@@ -25,9 +25,7 @@ import _ from 'lodash'
 import {forceCheck} from 'react-lazyload'
 import FilterSelectCategoryComponent from './components/FilterSelectCategoryComponent'
 
-type FilterBarProps = {}
-
-const FilterBar = ({}: FilterBarProps) => {
+const FilterBar = () => {
     const dispatch = useDispatch()
     const filterInitCompleted = useSelector(isFilterInitCompletedSelector)
     const starsValue = useSelector(getStarsFilterValuesSelector)
@@ -57,7 +55,7 @@ const FilterBar = ({}: FilterBarProps) => {
             [FilterOpenIssues]: openIssuesValue,
         })
         setFiltersInitiated(true)
-    }, [filterInitCompleted, filtersInitiated])
+    }, [filterInitCompleted, filtersInitiated, starsValue, watchersValue, forksValue, openIssuesValue])
 
     const [dispatchDebounced] = useState(() =>
         _.debounce((arfs) => {

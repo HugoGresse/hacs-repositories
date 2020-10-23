@@ -8,9 +8,6 @@ import FilterBar from './FilterBar'
 import {useSelector} from 'react-redux'
 import {getVisiblePackagesByCategorySelector} from './packages/packagesSelectors'
 
-type PackageCategoriesList = {
-}
-
 const useStyles = makeStyles(theme => ({
     item: {
         width: "100%",
@@ -22,7 +19,7 @@ const useStyles = makeStyles(theme => ({
 
 const lineHeight = 70
 
-const PackageCategoriesList = ({}: PackageCategoriesList) => {
+const PackageCategoriesList = () => {
     const classes = useStyles()
     const packagesByCategories = useSelector(getVisiblePackagesByCategorySelector)
 
