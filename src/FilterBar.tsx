@@ -1,5 +1,5 @@
-import React, {useEffect, useState} from 'react'
-import {useDispatch, useSelector} from 'react-redux'
+import React, { useEffect, useState } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
 import {
     getAvailableCategoriesSelector,
     getForksFilterValuesSelector,
@@ -8,21 +8,21 @@ import {
     getSelectedCategoriesSelector,
     getStarsFilterValuesSelector,
     getWatchersFilterValuesSelector,
-    isFilterInitCompletedSelector
+    isFilterInitCompletedSelector,
 } from './packages/packagesSelectors'
-import {setFilterRange, setFilterSelect} from './packages/filterActions'
+import { setFilterRange, setFilterSelect } from './packages/filterActions'
 import {
     FilterFork,
     FilterOpenIssues,
     FilterPackageCategories,
     FilterRangeTypes,
     FilterStar,
-    FilterWatchers
+    FilterWatchers,
 } from './packages/types'
-import {FilterRangeComponent} from './components/FilterRangeComponent'
-import {Box, CircularProgress, Typography} from '@material-ui/core'
+import { FilterRangeComponent } from './components/FilterRangeComponent'
+import { Box, CircularProgress, Typography } from '@material-ui/core'
 import _ from 'lodash'
-import {forceCheck} from 'react-lazyload'
+import { forceCheck } from 'react-lazyload'
 import FilterSelectCategoryComponent from './components/FilterSelectCategoryComponent'
 
 const FilterBar = () => {
@@ -55,81 +55,101 @@ const FilterBar = () => {
             [FilterOpenIssues]: openIssuesValue,
         })
         setFiltersInitiated(true)
-    }, [filterInitCompleted, filtersInitiated, starsValue, watchersValue, forksValue, openIssuesValue])
+    }, [
+        filterInitCompleted,
+        filtersInitiated,
+        starsValue,
+        watchersValue,
+        forksValue,
+        openIssuesValue,
+    ])
 
     const [dispatchDebounced] = useState(() =>
-        _.debounce((arfs) => {
-            dispatch(arfs)
-            forceCheck()
-        }, 200, {
-            leading: false,
-            trailing: true
-        })
+        _.debounce(
+            (arfs) => {
+                dispatch(arfs)
+                forceCheck()
+            },
+            200,
+            {
+                leading: false,
+                trailing: true,
+            }
+        )
     )
 
-    const onFilterChange = (filter: FilterRangeTypes) => (event: React.ChangeEvent<{}>, value: number | number[]) => {
+    const onFilterChange = (filter: FilterRangeTypes) => (
+        event: React.ChangeEvent<{}>,
+        value: number | number[]
+    ) => {
         if (Array.isArray(value)) {
             // this allow the filter on redux to be debounced while maintaining up to date react state update on drag
             setFiltersValues({
                 ...filtersValues,
-                [filter]: value
+                [filter]: value,
             })
             dispatchDebounced(setFilterRange(filter, value[0], value[1]))
         }
     }
 
     const onPackageTypeChange = (categories: string[]) => {
-        dispatch(setFilterSelect(FilterPackageCategories, categories));
+        dispatch(setFilterSelect(FilterPackageCategories, categories))
         setTimeout(forceCheck, 0)
     }
 
     if (!minMaxFiltersValues || !filterInitCompleted) {
-        return <Box padding={4}> <CircularProgress/></Box>
+        return (
+            <Box padding={4}>
+                {' '}
+                <CircularProgress />
+            </Box>
+        )
     }
-    return <Box padding={4}>
-        <Typography variant="h4" gutterBottom>
-            Filters
-        </Typography>
+    return (
+        <Box padding={4}>
+            <Typography variant="h4" gutterBottom>
+                Filters
+            </Typography>
 
-        <FilterSelectCategoryComponent
-            onSelectChange={onPackageTypeChange}
-            selectedValues={selectedCategories}
-            values={availableCategories}
+            <FilterSelectCategoryComponent
+                onSelectChange={onPackageTypeChange}
+                selectedValues={selectedCategories}
+                values={availableCategories}
             />
-        <FilterRangeComponent
-            filter={FilterStar}
-            name="Stars"
-            value={filtersValues[FilterStar]}
-            minValue={minMaxFiltersValues.stars.min}
-            maxValue={minMaxFiltersValues.stars.max}
-            onFilterChange={onFilterChange}
-        />
-        <FilterRangeComponent
-            filter={FilterWatchers}
-            name="Watchers"
-            value={filtersValues[FilterWatchers]}
-            minValue={minMaxFiltersValues.watchers.min}
-            maxValue={minMaxFiltersValues.watchers.max}
-            onFilterChange={onFilterChange}
-        />
-        <FilterRangeComponent
-            filter={FilterFork}
-            name="Forks"
-            value={filtersValues[FilterFork]}
-            minValue={minMaxFiltersValues.forks.min}
-            maxValue={minMaxFiltersValues.forks.max}
-            onFilterChange={onFilterChange}
-        />
-        <FilterRangeComponent
-            filter={FilterOpenIssues}
-            name="Open issues"
-            value={filtersValues[FilterOpenIssues]}
-            minValue={minMaxFiltersValues.openIssues.min}
-            maxValue={minMaxFiltersValues.openIssues.max}
-            onFilterChange={onFilterChange}
-        />
-
-    </Box>
+            <FilterRangeComponent
+                filter={FilterStar}
+                name="Stars"
+                value={filtersValues[FilterStar]}
+                minValue={minMaxFiltersValues.stars.min}
+                maxValue={minMaxFiltersValues.stars.max}
+                onFilterChange={onFilterChange}
+            />
+            <FilterRangeComponent
+                filter={FilterWatchers}
+                name="Watchers"
+                value={filtersValues[FilterWatchers]}
+                minValue={minMaxFiltersValues.watchers.min}
+                maxValue={minMaxFiltersValues.watchers.max}
+                onFilterChange={onFilterChange}
+            />
+            <FilterRangeComponent
+                filter={FilterFork}
+                name="Forks"
+                value={filtersValues[FilterFork]}
+                minValue={minMaxFiltersValues.forks.min}
+                maxValue={minMaxFiltersValues.forks.max}
+                onFilterChange={onFilterChange}
+            />
+            <FilterRangeComponent
+                filter={FilterOpenIssues}
+                name="Open issues"
+                value={filtersValues[FilterOpenIssues]}
+                minValue={minMaxFiltersValues.openIssues.min}
+                maxValue={minMaxFiltersValues.openIssues.max}
+                onFilterChange={onFilterChange}
+            />
+        </Box>
+    )
 }
 
 export default FilterBar

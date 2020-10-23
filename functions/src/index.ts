@@ -1,1 +1,1 @@
-export {updateHacsPackages} from './updateHacsPackages'
+export { updateHacsPackages } from './updateHacsPackages'

@@ -16,14 +16,9 @@ export const firestore = firebaseMain.firestore()
 
 // firebase.functions().useFunctionsEmulator('http://localhost:5000')
 export const functions = {
-    updateHacsPackages: firebase
-        .functions()
-        .httpsCallable('updateHacsPackages'),
+    updateHacsPackages: firebase.functions().httpsCallable('updateHacsPackages'),
 }
 
-if (
-    process.env.NODE_ENV === 'production' &&
-    process.env.REACT_APP_MEASUREMENT_ID
-) {
+if (process.env.NODE_ENV === 'production' && process.env.REACT_APP_MEASUREMENT_ID) {
     firebase.analytics()
 }

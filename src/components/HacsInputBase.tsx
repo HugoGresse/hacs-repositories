@@ -1,4 +1,4 @@
-import {InputBase, withStyles} from '@material-ui/core'
+import { InputBase, withStyles } from '@material-ui/core'
 
 export const HacsInput = withStyles((theme) => ({
     root: {
@@ -14,8 +14,9 @@ export const HacsInput = withStyles((theme) => ({
         transition: theme.transitions.create(['border-color', 'box-shadow']),
         '&:hover': {
             boxShadow: `0 0 0 0.2rem ${theme.palette.primary.main}`,
-        },'&:focus': {
+        },
+        '&:focus': {
             boxShadow: `0 0 0 0.2rem ${theme.palette.primary.main}`,
         },
     },
-}))(InputBase);
+}))(InputBase)

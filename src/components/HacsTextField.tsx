@@ -1,5 +1,5 @@
 import React from 'react'
-import {TextField, withStyles} from '@material-ui/core'
+import { TextField, withStyles } from '@material-ui/core'
 
 export const HacsTextField = withStyles({
     root: {
@@ -12,7 +12,7 @@ export const HacsTextField = withStyles({
         },
 
         '& .MuiInput-underline': {
-            height:50,
-        }
+            height: 50,
+        },
     },
-})(TextField);
+})(TextField)

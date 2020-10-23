@@ -1,11 +1,11 @@
-import React, {useEffect} from 'react'
+import React, { useEffect } from 'react'
 import Grid from '@material-ui/core/Grid'
 import PackageCategoriesList from './PackageCategoriesList'
-import {functions} from './firebase/firebase'
-import {Button} from '@material-ui/core'
-import {useDispatch} from 'react-redux'
+import { functions } from './firebase/firebase'
+import { Button } from '@material-ui/core'
+import { useDispatch } from 'react-redux'
 import AppLayout from './AppLayout'
-import {loadPackages} from './packages/loadActions'
+import { loadPackages } from './packages/loadActions'
 import Header from './Header'
 
 /**
@@ -20,17 +20,18 @@ function App() {
 
     useEffect(() => {
         dispatch(loadPackages())
-    } , [dispatch])
+    }, [dispatch])
 
-    return <AppLayout>
-        <Grid container spacing={4}>
-            <Grid item xs={12}>
-                    <Header/>
+    return (
+        <AppLayout>
+            <Grid container spacing={4}>
+                <Grid item xs={12}>
+                    <Header />
+                </Grid>
+                <PackageCategoriesList />
             </Grid>
-            <PackageCategoriesList />
-
-        </Grid>
-    </AppLayout>
+        </AppLayout>
+    )
 }
 
 export default App
