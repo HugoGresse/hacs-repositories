@@ -7,7 +7,6 @@ import Grid from '@material-ui/core/Grid/Grid'
 import FilterBar from './FilterBar'
 import {useSelector} from 'react-redux'
 import {getVisiblePackagesByCategorySelector} from './packages/packagesSelectors'
-
 const useStyles = makeStyles(theme => ({
     item: {
         width: "100%",
@@ -23,7 +22,7 @@ const PackageCategoriesList = () => {
     const classes = useStyles()
     const packagesByCategories = useSelector(getVisiblePackagesByCategorySelector)
 
-    return <Grid container spacing={4}>
+    return <>
         <Grid item xs={12} sm={4}>
             <FilterBar />
         </Grid>
@@ -45,7 +44,7 @@ const PackageCategoriesList = () => {
             }
         </Grid>
 
-    </Grid>
+    </>
 }
 
 export default PackageCategoriesList

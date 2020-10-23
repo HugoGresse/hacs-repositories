@@ -80,9 +80,7 @@ const FilterBar = () => {
 
     const onPackageTypeChange = (categories: string[]) => {
         dispatch(setFilterSelect(FilterPackageCategories, categories));
-        setTimeout(() => {
-            forceCheck()
-        }, 0)
+        setTimeout(forceCheck, 0)
     }
 
     if (!minMaxFiltersValues || !filterInitCompleted) {

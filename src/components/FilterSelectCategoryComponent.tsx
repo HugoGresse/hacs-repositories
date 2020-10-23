@@ -48,7 +48,7 @@ const FilterSelectCategoryComponent = ({onSelectChange, values, selectedValues}:
     }
 
     return <FormControl className={classes.formControl}>
-        <FilterName>Package type{selectedValues.length > 1 ? 's' : ''}</FilterName>
+        <FilterName>Repository type{selectedValues.length > 1 ? 's' : ''}</FilterName>
         <Select
             labelId="package-type"
             id="package-type"

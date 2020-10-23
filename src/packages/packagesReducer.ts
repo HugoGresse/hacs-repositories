@@ -9,12 +9,13 @@ import {
   FilterWatchers,
   LOAD_PACKAGES_END,
   LOAD_PACKAGES_START,
-  LoadPackagesEndAction,
   PackagesActionTypes,
+  RESET_SORT,
+  SEARCH_UPDATE,
   SET_FILTER_RANGE,
   SET_FILTER_SELECT,
-  SetFilterRangeAction,
-  SetFilterSelectAction,
+  SET_SORT,
+  SortTypes,
 } from "./types";
 import { DateTime } from "luxon";
 
@@ -31,7 +32,8 @@ export interface PackagesState {
     [FilterPackageCategories]: Category[];
     initCompleted: boolean;
   };
-  sorts: {};
+  sort?: SortTypes;
+  search: string | null;
 }
 
 const initState: PackagesState = {
@@ -47,7 +49,8 @@ const initState: PackagesState = {
     [FilterPackageCategories]: [],
     initCompleted: false,
   },
-  sorts: {},
+  sort: undefined,
+  search: null,
 };
 
 export const packagesReducer = produce(
@@ -57,7 +60,7 @@ export const packagesReducer = produce(
         draft.loading = true;
         break;
       case LOAD_PACKAGES_END: {
-        const { payload } = action as LoadPackagesEndAction;
+        const { payload } = action;
         draft.loading = false;
         if (payload.loadSuccess) {
           draft.loaded = true;
@@ -69,7 +72,7 @@ export const packagesReducer = produce(
         break;
       }
       case SET_FILTER_RANGE: {
-        const { payload } = action as SetFilterRangeAction;
+        const { payload } = action;
         switch (payload.filter) {
           case FilterFork:
           case FilterStar:
@@ -89,7 +92,7 @@ export const packagesReducer = produce(
         break;
       }
       case SET_FILTER_SELECT: {
-        const { payload } = action as SetFilterSelectAction;
+        const { payload } = action;
         switch (payload.filter) {
           case FilterPackageCategories:
             draft.filters[payload.filter] = payload.selected as Category[];
@@ -104,6 +107,15 @@ export const packagesReducer = produce(
       }
       case FILTER_INIT_COMPLETED:
         draft.filters.initCompleted = true;
+        break;
+      case SEARCH_UPDATE:
+        draft.search = action.payload;
+        break;
+      case SET_SORT:
+        draft.sort = action.payload;
+        break;
+      case RESET_SORT:
+        draft.sort = undefined;
         break;
       default:
         break;

@@ -26,6 +26,10 @@ export const getSelectedCategoriesSelector = (state: State) =>
   getFiltersSelector(state)[FilterPackageCategories];
 export const isFilterInitCompletedSelector = (state: State) =>
   getFiltersSelector(state).initCompleted;
+export const getSearchValueSelector = (state: State) =>
+  getPackagesState(state).search;
+export const getSortModeSelector = (state: State) =>
+  getPackagesState(state).sort;
 
 export const isPackagesByCategoryLoadingSelector = (state: State) =>
   getPackagesState(state).loading;
@@ -41,13 +45,15 @@ export const getVisiblePackagesByCategorySelector = createSelector(
   getForksFilterValuesSelector,
   getOpenIssuesFilterValuesSelector,
   getSelectedCategoriesSelector,
+  getSearchValueSelector,
   (
     packagesByCategory,
     starValues,
     watchersValues,
     forksValues,
     openIssuesValues,
-    selectedCategories
+    selectedCategories,
+    searchValue
   ) => {
     let starsOutOfRange = false;
     let watchersOutOfRange = false;
@@ -62,6 +68,10 @@ export const getVisiblePackagesByCategorySelector = createSelector(
       }
 
       const packages = packageByCat.packages.filter((packageItem) => {
+        if (searchValue && !packageItem.name.includes(searchValue)) {
+          return false;
+        }
+
         if (!packageItem.stats) {
           return false;
         }

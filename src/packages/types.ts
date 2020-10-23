@@ -11,6 +11,9 @@ export const CLEAR_FILTER = "packages/filter/clear";
 export const SET_FILTER_RANGE = "packages/filter/setRange";
 export const SET_FILTER_SELECT = "packages/filter/setSelect";
 export const FILTER_INIT_COMPLETED = "packages/filter/initCompleted";
+export const SEARCH_UPDATE = "packages/search/update";
+export const SET_SORT = "packages/sort/set";
+export const RESET_SORT = "packages/sort/reset";
 
 export const FilterStar = "filterStar";
 export const FilterFork = "filterFork";
@@ -23,6 +26,14 @@ export type FilterRangeTypes =
   | typeof FilterFork
   | typeof FilterWatchers
   | typeof FilterOpenIssues;
+
+export const SortCreatedAsc = "sortUpdateAsc";
+export const SortUpdateDesc = "sortUpdateDesc";
+export const SortStatsDesc = "sortStarsDesc";
+export type SortTypes =
+  | typeof SortCreatedAsc
+  | typeof SortUpdateDesc
+  | typeof SortStatsDesc;
 
 export type FilterSelectTypes = typeof FilterPackageCategories;
 
@@ -67,10 +78,27 @@ export interface FilterInitCompleted {
   type: typeof FILTER_INIT_COMPLETED;
 }
 
+export interface SearchUpdate {
+  type: typeof SEARCH_UPDATE;
+  payload: string | null;
+}
+
+export interface SortSet {
+  type: typeof SET_SORT;
+  payload: SortTypes;
+}
+
+export interface ResetSort {
+  type: typeof RESET_SORT;
+}
+
 export type PackagesActionTypes =
   | LoadPackagesStartAction
   | LoadPackagesEndAction
   | ClearFilterAction
   | SetFilterRangeAction
   | SetFilterSelectAction
-  | FilterInitCompleted;
+  | FilterInitCompleted
+  | SearchUpdate
+  | SortSet
+  | ResetSort;

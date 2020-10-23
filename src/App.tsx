@@ -6,12 +6,13 @@ import {Button} from '@material-ui/core'
 import {useDispatch} from 'react-redux'
 import AppLayout from './AppLayout'
 import {loadPackages} from './packages/loadActions'
+import Header from './Header'
 
 /**
  * TODO :
- * 3. search + remove border
+ * // TODO : need to update functions for that createdAt, add real repo name separately, check duplicated jm-73 nolonger exist
  * 4. update list behavior
- * 5. READMe, github
+ * 5. READMe, github, license
  * 6. polish (colors?) + footer
  */
 function App() {
@@ -22,18 +23,11 @@ function App() {
     } , [dispatch])
 
     return <AppLayout>
-        <Grid container spacing={3}>
-            <Grid item xs={12}
-            >
-
-                <Button onClick={async () => {
-                    const data = await functions.updateHacsPackages()
-                    console.log(data)
-                }}>Update list</Button>
-
+        <Grid container spacing={4}>
+            <Grid item xs={12}>
+                    <Header/>
             </Grid>
             <PackageCategoriesList />
-
 
         </Grid>
     </AppLayout>
