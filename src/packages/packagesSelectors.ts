@@ -16,6 +16,7 @@ import {
 
 const getPackagesState = (state: State): PackagesState => state.packages
 
+export const getLastUpdateSelector = (state: State) => getPackagesState(state).updatedAt
 export const getFiltersSelector = (state: State) => getPackagesState(state).filters
 export const getStarsFilterValuesSelector = (state: State) => getFiltersSelector(state)[FilterStar]
 export const getWatchersFilterValuesSelector = (state: State) =>

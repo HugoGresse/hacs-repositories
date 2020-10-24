@@ -41,6 +41,7 @@ export const getPackagesFromFirestore = async (): Promise<PackagesLoadResult> =>
                     return 1
                 }),
             status: data.status,
+            updatedAt: DateTime.fromJSDate(data.updatedAt.toDate()),
         }
     }
 

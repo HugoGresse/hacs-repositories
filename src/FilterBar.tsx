@@ -29,6 +29,7 @@ import {forceCheck} from 'react-lazyload'
 import FilterSelectCategoryComponent from './components/FilterSelectCategoryComponent'
 import {setSort} from './packages/sortActions'
 import {ToggleButtonGroup, ToggleButton} from '@material-ui/lab'
+import UpdateInfo from './UpdateInfo'
 
 const FilterBar = () => {
     const dispatch = useDispatch()
@@ -118,7 +119,6 @@ const FilterBar = () => {
     }
     return (
         <Box padding={4}>
-
             <Typography variant="h4" gutterBottom>
                 Sort
             </Typography>
@@ -169,6 +169,8 @@ const FilterBar = () => {
                 maxValue={minMaxFiltersValues.openIssues.max}
                 onFilterChange={onFilterChange}
             />
+
+            <UpdateInfo/>
         </Box>
     )
 }

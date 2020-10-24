@@ -24,7 +24,7 @@ export interface PackagesState {
     packagesByCategories: PackagesByCategory[]
     loading: boolean
     loaded: boolean
-    updatedAt: null | DateTime
+    updatedAt?: DateTime
     filters: {
         [FilterStar]: number[]
         [FilterWatchers]: number[]
@@ -41,7 +41,7 @@ const initState: PackagesState = {
     packagesByCategories: [],
     loading: false,
     loaded: false,
-    updatedAt: null,
+    updatedAt: undefined,
     filters: {
         [FilterStar]: [0, 0],
         [FilterWatchers]: [0, 0],
@@ -65,9 +65,7 @@ export const packagesReducer = produce((draft: PackagesState, action: PackagesAc
             if (payload.loadSuccess) {
                 draft.loaded = true
                 draft.packagesByCategories = payload.packages || []
-                if (payload.updatedAt) {
-                    draft.updatedAt = DateTime.fromJSDate(payload.updatedAt.toDate())
-                }
+                draft.updatedAt = payload.updatedAt
             }
             break
         }
@@ -109,7 +107,7 @@ export const packagesReducer = produce((draft: PackagesState, action: PackagesAc
             draft.sort = action.payload
             break
         case RESET_SORT:
-            draft.sort = undefined
+            draft.sort = SortUpdatedDesc
             break
         default:
             break

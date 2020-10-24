@@ -1,5 +1,5 @@
 import { Category, PackagesByCategory, Status } from '../../functions/src/types'
-import firebase from 'firebase'
+import { DateTime } from 'luxon'
 
 export const LOAD_PACKAGES_START = 'packages/load/start'
 export const LOAD_PACKAGES_END = 'packages/load/end'
@@ -33,7 +33,7 @@ export type FilterSelectTypes = typeof FilterPackageCategories
 export type PackagesLoadResult = {
     packages?: PackagesByCategory[]
     status?: Status
-    updatedAt?: firebase.firestore.Timestamp
+    updatedAt?: DateTime
     loadSuccess: boolean
 }
 

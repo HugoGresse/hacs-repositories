@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
-import { Box, Button, Grid, InputAdornment } from '@material-ui/core'
-import { functions } from './firebase/firebase'
+import { Box,  Grid, InputAdornment } from '@material-ui/core'
 import HACSRepositoriesLogo from './logos/hacs-repositories-transparent-blue.svg'
 import SearchIcon from '@material-ui/icons/Search'
 import { HacsTextField } from './components/HacsTextField'
@@ -51,15 +50,6 @@ const Header = () => {
                         }}
                     />
                 </Box>
-            </Grid>
-            <Grid item xs={12} sm={2}>
-                <Button
-                    onClick={async () => {
-                        const data = await functions.updateHacsPackages()
-                        console.log(data)
-                    }}>
-                    Update list
-                </Button>
             </Grid>
         </Grid>
     )
