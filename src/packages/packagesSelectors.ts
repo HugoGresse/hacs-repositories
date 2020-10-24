@@ -8,6 +8,10 @@ import {
     FilterPackageCategories,
     FilterStar,
     FilterWatchers,
+    SortCreatedAsc,
+    SortStarsDesc,
+    SortTypes,
+    SortUpdatedDesc,
 } from './types'
 
 const getPackagesState = (state: State): PackagesState => state.packages
@@ -24,7 +28,7 @@ export const getSelectedCategoriesSelector = (state: State) =>
 export const isFilterInitCompletedSelector = (state: State) =>
     getFiltersSelector(state).initCompleted
 export const getSearchValueSelector = (state: State) => getPackagesState(state).search
-export const getSortModeSelector = (state: State) => getPackagesState(state).sort
+export const getSortModeSelector = (state: State): SortTypes => getPackagesState(state).sort
 
 export const isPackagesByCategoryLoadingSelector = (state: State) => getPackagesState(state).loading
 export const getPackagesByCategorySelector = (state: State) =>
@@ -32,8 +36,22 @@ export const getPackagesByCategorySelector = (state: State) =>
 
 // Memoized selectors
 
-export const getVisiblePackagesByCategorySelector = createSelector(
+export const getSortedPackagesByCategoriesSelector = createSelector(
     getPackagesByCategorySelector,
+    getSortModeSelector,
+    (packagesByCategories, sortMode: SortTypes): PackagesByCategory[] => {
+        const sortFunction = sortPackages(sortMode)
+        return packagesByCategories.map((packageByCat) => {
+            return {
+                category: packageByCat.category,
+                packages: packageByCat.packages.slice().sort(sortFunction),
+            }
+        })
+    }
+)
+
+export const getVisiblePackagesByCategorySelector = createSelector(
+    getSortedPackagesByCategoriesSelector,
     getStarsFilterValuesSelector,
     getWatchersFilterValuesSelector,
     getForksFilterValuesSelector,
@@ -161,3 +179,41 @@ export const getAvailableCategoriesSelector = createSelector(
     getPackagesByCategorySelector,
     (packagesByCategory) => packagesByCategory.map((packagesByCat) => packagesByCat.category)
 )
+
+const sortPackages = (sortType: SortTypes) => (a: Package, b: Package): number => {
+    if (!a.stats || !b.stats) {
+        return 0
+    }
+
+    switch (sortType) {
+        case SortStarsDesc:
+            if (a.stats?.stars > b.stats?.stars) {
+                return -1
+            } else if (a.stats?.stars < b.stats?.stars) {
+                return 1
+            }
+            return 0
+        case SortUpdatedDesc:
+            if (!a.stats.updatedAtLuxon || !b.stats.updatedAtLuxon) {
+                return 0
+            }
+            if (a.stats?.updatedAtLuxon > b.stats?.updatedAtLuxon) {
+                return -1
+            } else if (a.stats?.updatedAtLuxon < b.stats?.updatedAtLuxon) {
+                return 1
+            }
+            return 0
+        case SortCreatedAsc:
+            if (!a.stats.createdAtLuxon || !b.stats.createdAtLuxon) {
+                return 0
+            }
+            if (a.stats?.createdAtLuxon > b.stats?.createdAtLuxon) {
+                return -1
+            } else if (a.stats?.createdAtLuxon < b.stats?.createdAtLuxon) {
+                return 1
+            }
+            return 0
+        default:
+            return 0
+    }
+}

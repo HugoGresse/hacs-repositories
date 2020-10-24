@@ -16,6 +16,7 @@ import {
     SET_FILTER_SELECT,
     SET_SORT,
     SortTypes,
+    SortUpdatedDesc,
 } from './types'
 import { DateTime } from 'luxon'
 
@@ -32,7 +33,7 @@ export interface PackagesState {
         [FilterPackageCategories]: Category[]
         initCompleted: boolean
     }
-    sort?: SortTypes
+    sort: SortTypes
     search: string | null
 }
 
@@ -49,7 +50,7 @@ const initState: PackagesState = {
         [FilterPackageCategories]: [],
         initCompleted: false,
     },
-    sort: undefined,
+    sort: SortUpdatedDesc,
     search: null,
 }
 

@@ -46,6 +46,7 @@ export const getSortedPackages = async (): Promise<PackagesByCategory[]> => {
             category: category,
             packages: packages.map((p) => ({
                 name: p,
+                fullName: p,
             })),
         })
     }
@@ -53,6 +54,7 @@ export const getSortedPackages = async (): Promise<PackagesByCategory[]> => {
     for (const packagesByCat of packagesByCategories) {
         for (const item of packagesByCat.packages) {
             const repoData = await getRepoDate(item.name)
+            item.name = repoData.name
             item.stats = repoData.stats
             item.info = repoData.infos
         }
@@ -72,6 +74,7 @@ const getRepoDate = async (
 ): Promise<{
     stats: RepoStats
     infos: RepoInfo
+    name: PackageName
 }> => {
     const result = await fetch(BASE_GITHUB_API_URL + packageName, {
         headers: {
@@ -81,18 +84,20 @@ const getRepoDate = async (
     const data: any = await result.json()
 
     return {
+        name: data.name,
         stats: {
             forks: data.forks,
             stars: data.stargazers_count,
             watchers: data.watchers,
             openIssues: data.open_issues,
             updatedAt: data.updated_at,
+            createdAt: data.created_at,
         },
         infos: {
             description: data.description,
             url: data.html_url,
             homepageUrl: data.homepage,
-            license: data.license ? data.license.key : null,
+            license: data.license ? data.license.spdx_id : null,
         },
     }
 }

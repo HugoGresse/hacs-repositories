@@ -32,7 +32,7 @@ const Header = () => {
     return (
         <Grid container component={Box} paddingLeft={4} paddingTop={0}>
             <Grid item xs={12} sm={4}>
-                <img src={HACSRepositoriesLogo} width={250} />
+                <img src={HACSRepositoriesLogo} width={250} alt="HACS Repositories logo"/>
             </Grid>
             <Grid item xs={12} sm={6}>
                 <Box marginTop={1}>

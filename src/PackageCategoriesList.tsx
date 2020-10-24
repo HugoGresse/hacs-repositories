@@ -36,7 +36,7 @@ const PackageCategoriesList = () => {
                                     {category.name}
                                 </Typography>
                                 {packages.map((p) => (
-                                    <LazyLoad key={p.name} height={lineHeight}>
+                                    <LazyLoad key={p.fullName} height={lineHeight}>
                                         <PackageItem packageItem={p} />
                                     </LazyLoad>
                                 ))}

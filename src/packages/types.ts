@@ -23,10 +23,10 @@ export type FilterRangeTypes =
     | typeof FilterWatchers
     | typeof FilterOpenIssues
 
-export const SortCreatedAsc = 'sortUpdateAsc'
-export const SortUpdateDesc = 'sortUpdateDesc'
-export const SortStatsDesc = 'sortStarsDesc'
-export type SortTypes = typeof SortCreatedAsc | typeof SortUpdateDesc | typeof SortStatsDesc
+export const SortCreatedAsc = 'sortCreatedAsc'
+export const SortUpdatedDesc = 'sortUpdatedDesc'
+export const SortStarsDesc = 'sortStarsDesc'
+export type SortTypes = typeof SortCreatedAsc | typeof SortUpdatedDesc | typeof SortStarsDesc
 
 export type FilterSelectTypes = typeof FilterPackageCategories
 
