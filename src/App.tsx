@@ -8,7 +8,6 @@ import Header from './Header'
 
 /**
  * TODO :
- * 4. update list behavior
  * 5. READMe, github, license
  * 6. polish (colors?) + footer
  */

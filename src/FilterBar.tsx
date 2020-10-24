@@ -23,13 +23,14 @@ import {
     SortUpdatedDesc,
 } from './packages/types'
 import {FilterRangeComponent} from './components/FilterRangeComponent'
-import {Box,CircularProgress, Typography} from '@material-ui/core'
+import {Box, CircularProgress, Typography} from '@material-ui/core'
 import _ from 'lodash'
 import {forceCheck} from 'react-lazyload'
 import FilterSelectCategoryComponent from './components/FilterSelectCategoryComponent'
 import {setSort} from './packages/sortActions'
 import {ToggleButtonGroup, ToggleButton} from '@material-ui/lab'
 import UpdateInfo from './UpdateInfo'
+import useIsMobile from './utils/useIsMobile'
 
 const FilterBar = () => {
     const dispatch = useDispatch()
@@ -42,6 +43,7 @@ const FilterBar = () => {
     const availableCategories = useSelector(getAvailableCategoriesSelector)
     const selectedCategories = useSelector(getSelectedCategoriesSelector)
     const selectedSort = useSelector(getSortModeSelector)
+    const isMobile = useIsMobile()
 
     const [filtersValues, setFiltersValues] = useState({
         [FilterStar]: [0, 0],
@@ -118,7 +120,7 @@ const FilterBar = () => {
         )
     }
     return (
-        <Box padding={4}>
+        <Box padding={isMobile ? 0 : 4}>
             <Typography variant="h4" gutterBottom>
                 Sort
             </Typography>
@@ -129,7 +131,7 @@ const FilterBar = () => {
             </ToggleButtonGroup><br/><br/><br/>
 
             <Typography variant="h4" gutterBottom>
-                Filters
+                Filter
             </Typography>
 
             <FilterSelectCategoryComponent

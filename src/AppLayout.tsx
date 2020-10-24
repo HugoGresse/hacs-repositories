@@ -45,6 +45,12 @@ const AppLayout = ({ children }: AppLayoutProps) => {
             },
             palette: {
                 type: prefersDarkMode ? 'dark' : 'light',
+                primary: {
+                    // light: will be calculated from palette.primary.main,
+                    main: '#41BDF5',
+                    // dark: will be calculated from palette.primary.main,
+                    // contrastText: will be calculated to contrast with palette.primary.main
+                },
                 pageBackground: prefersDarkMode ? '#303030' : '#fff',
                 headerBackground: prefersDarkMode ? '#090' : '#8aecb8',
             },

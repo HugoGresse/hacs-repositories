@@ -1,7 +1,6 @@
 import { FilterRangeTypes } from '../packages/types'
 import React from 'react'
-import { Slider } from '@material-ui/core'
-import { makeStyles } from '@material-ui/core/styles'
+import {Box, Slider} from '@material-ui/core'
 import FilterName from './FilterName'
 
 type FilterComponentProps = {
@@ -17,14 +16,6 @@ type FilterComponentProps = {
 
 const valueText = (value: number, index: number) => `${value}`
 
-const useStyles = makeStyles((theme) => ({
-    slider: {
-        marginLeft: 6,
-        marginRight: 6,
-        marginBottom: 12,
-    },
-}))
-
 export const FilterRangeComponent = ({
     filter,
     name,
@@ -33,14 +24,14 @@ export const FilterRangeComponent = ({
     maxValue,
     onFilterChange,
 }: FilterComponentProps) => {
-    const classes = useStyles()
     return (
-        <>
+        <Box >
             <FilterName>
                 {name} ({value[0]}→{value[1]})
             </FilterName>
+
+            <Box display="block" position="relative" padding={1}>
             <Slider
-                className={classes.slider}
                 value={[value[0], value[1]]}
                 onChange={onFilterChange(filter)}
                 min={minValue}
@@ -49,6 +40,7 @@ export const FilterRangeComponent = ({
                 aria-labelledby="range-slider"
                 getAriaValueText={valueText}
             />
-        </>
+            </Box>
+        </Box>
     )
 }
