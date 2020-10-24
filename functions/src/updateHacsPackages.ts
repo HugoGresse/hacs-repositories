@@ -1,6 +1,6 @@
 import * as functions from 'firebase-functions'
-import {getSortedPackages} from './github/getSortedPackages'
-import {db, serverTimestamp} from './firebase'
+import { getSortedPackages } from './github/getSortedPackages'
+import { db, serverTimestamp } from './firebase'
 import * as admin from 'firebase-admin'
 import Timestamp = admin.firestore.Timestamp
 
@@ -10,38 +10,44 @@ export const updateHacsPackages = functions
         memory: '2GB',
     })
     .https.onCall(async () => {
-    const shouldUpdateData = await shouldUpdate()
+        const shouldUpdateData = await shouldUpdate()
 
-    if(shouldUpdateData) {
-        console.log("Update needed right now")
+        if (shouldUpdateData) {
+            console.log('Update needed right now')
 
-        await db.collection('data').doc('document')
-            .set({
-                status: STATUS_UPDATING
-            }, {merge: true})
+            await db.collection('data').doc('document').set(
+                {
+                    status: STATUS_UPDATING,
+                },
+                { merge: true }
+            )
 
-        const packages = await getSortedPackages()
+            const packages = await getSortedPackages()
 
-        await db.collection('data')
-            .doc('document')
-            .set({
-                status: STATUS_UPDATED,
-                updatedAt: serverTimestamp(),
-                data: JSON.stringify(packages)
-            }, {merge: true})
-        return true
-    }
+            await db
+                .collection('data')
+                .doc('document')
+                .set(
+                    {
+                        status: STATUS_UPDATED,
+                        updatedAt: serverTimestamp(),
+                        data: JSON.stringify(packages),
+                    },
+                    { merge: true }
+                )
+            return true
+        }
 
-    return false
-})
+        return false
+    })
 
 type Data = {
-    updatedAt: Timestamp,
+    updatedAt: Timestamp
     status: string
 }
 
-const STATUS_UPDATING = "updating"
-const STATUS_UPDATED = "updated"
+const STATUS_UPDATING = 'updating'
+const STATUS_UPDATED = 'updated'
 
 const shouldUpdate = async (): Promise<boolean> => {
     const result = await db.collection('data').doc('document').get()
@@ -56,11 +62,11 @@ const shouldUpdate = async (): Promise<boolean> => {
     const status = data.status
     // Check last update time, see if more than 24h
     const twentyFoursHoursInMillis = 86400000
-    if(!updatedAt || (updatedAt.toMillis() + twentyFoursHoursInMillis) < Date.now()) {
-        console.log("Need update, was a long time ago")
+    if (!updatedAt || updatedAt.toMillis() + twentyFoursHoursInMillis < Date.now()) {
+        console.log('Need update, was a long time ago')
 
-        if(status === STATUS_UPDATING) {
-            console.log("Current update in progress, abort")
+        if (status === STATUS_UPDATING) {
+            console.log('Current update in progress, abort')
             return false
         }
 
@@ -69,4 +75,3 @@ const shouldUpdate = async (): Promise<boolean> => {
 
     return false
 }
-
