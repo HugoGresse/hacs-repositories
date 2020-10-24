@@ -4,7 +4,7 @@
 
 Search within HACS repositories, like you do with NPM. This provide filters and sorts, as well as package description and stastistics (stars, last update, etc).
 
-#### Use it: [.web.app](https://.web.app/)
+#### Use it: [hacs-repositories.web.app](https://hacs-repositories.web.app/)
 
 # Dev setup (to be completed)
 
