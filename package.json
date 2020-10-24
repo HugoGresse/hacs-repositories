@@ -5,7 +5,8 @@
     "scripts": {
         "start": "react-scripts start",
         "build": "react-scripts build",
-        "test": "react-scripts test"
+        "test": "react-scripts test",
+        "deploy": "npm run start && firebase deploy"
     },
     "dependencies": {
         "@material-ui/core": "^4.11.0",

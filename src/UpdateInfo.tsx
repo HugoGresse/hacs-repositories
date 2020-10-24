@@ -10,13 +10,9 @@ const UpdateInfo = () => {
     const [dialogOpen, setDialogOpen] = useState(false)
 
 
-    if(!lastUpdate) {
-        return null
-    }
-
     return  <Box marginTop={1} >
         <Button onClick={() => setDialogOpen(true)}  size="small">
-            Last update: {lastUpdate.toRelative()}
+            Last update: {lastUpdate ? lastUpdate.toRelative() : "never, click here to run it"}
         </Button>
 
 
@@ -24,8 +20,8 @@ const UpdateInfo = () => {
             <DialogTitle id="Update repositories">Update repository list</DialogTitle>
             <DialogContent>
                 <Typography>
-                    The list is updated upon user request to prevent useless server usage. The last update was {lastUpdate.toRelative()},
-                    on {lastUpdate.toLocaleString(DateTime.DATETIME_FULL)}. <br/>
+                    The list is updated upon user request to prevent useless server usage. The last update was {lastUpdate ? lastUpdate.toRelative() : "never"},
+                    on {lastUpdate ? lastUpdate.toLocaleString(DateTime.DATETIME_FULL) : "a missing day somewhere in deep space."}. <br/>
                     Upon request, the update take around 2-5 minutes, and can run one time per day maximum.
                 </Typography>
 

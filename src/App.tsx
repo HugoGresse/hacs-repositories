@@ -9,7 +9,6 @@ import Header from './Header'
 /**
  * TODO :
  * 5. READMe, github, license
- * 6. polish (colors?) + footer
  */
 function App() {
     const dispatch = useDispatch()
