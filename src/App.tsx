@@ -6,10 +6,6 @@ import AppLayout from './AppLayout'
 import { loadPackages } from './packages/loadActions'
 import Header from './Header'
 
-/**
- * TODO :
- * 5. READMe, github, license
- */
 function App() {
     const dispatch = useDispatch()
 
