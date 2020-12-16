@@ -81,7 +81,7 @@ export const getVisiblePackagesByCategorySelector = createSelector(
             }
 
             const packages = packageByCat.packages.filter((packageItem) => {
-                if (searchValue && !packageItem.name.includes(searchValue)) {
+                if (searchValue && (!packageItem.name || !packageItem.name.includes(searchValue))) {
                     return false
                 }
 
