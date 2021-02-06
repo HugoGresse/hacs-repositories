@@ -5,6 +5,7 @@ import { useDispatch } from 'react-redux'
 import AppLayout from './AppLayout'
 import { loadPackages } from './packages/loadActions'
 import Header from './Header'
+import {TestAframe} from './TestAframe'
 
 function App() {
     const dispatch = useDispatch()
@@ -15,12 +16,7 @@ function App() {
 
     return (
         <AppLayout>
-            <Grid container spacing={4}>
-                <Grid item xs={12}>
-                    <Header />
-                </Grid>
-                <PackageCategoriesList />
-            </Grid>
+                <TestAframe/>
         </AppLayout>
     )
 }
