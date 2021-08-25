@@ -31,3 +31,5 @@ yarn-error.log*
 # Firebase specific
 .firebase
 .firebaserc
+
+functions/.runtimeconfig.json

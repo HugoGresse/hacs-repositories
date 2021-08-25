@@ -83,6 +83,11 @@ const getRepoDate = async (
     })
     const data: any = await result.json()
 
+    if (result.status >= 400) {
+        console.error('GitHub Request failed, status:' + result.status, data)
+        throw new Error('GitHub Request failed, ' + String(result))
+    }
+
     return {
         name: data.name,
         stats: {
