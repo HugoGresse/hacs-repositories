@@ -1,7 +1,7 @@
-import * as admin from 'firebase-admin'
-import * as functions from 'firebase-functions'
+import { initializeApp } from 'firebase-admin/app'
+import { getFirestore, FieldValue } from 'firebase-admin/firestore'
 
-admin.initializeApp(functions.config().firebase)
+initializeApp()
 
-export const db = admin.firestore()
-export const serverTimestamp = admin.firestore.FieldValue.serverTimestamp
+export const db = getFirestore()
+export const serverTimestamp = FieldValue.serverTimestamp

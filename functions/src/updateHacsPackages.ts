@@ -1,15 +1,18 @@
-import * as functions from 'firebase-functions'
+import { onCall } from 'firebase-functions/v2/https'
 import { getSortedPackages } from './github/getSortedPackages'
 import { db, serverTimestamp } from './firebase'
-import * as admin from 'firebase-admin'
-import Timestamp = admin.firestore.Timestamp
+import { Timestamp } from 'firebase-admin/firestore'
+import { defineSecret } from 'firebase-functions/params'
 
-export const updateHacsPackages = functions
-    .runWith({
+const githubToken = defineSecret("GITHUB_TOKEN")
+
+export const updateHacsPackagesv2 = onCall(
+    {
         timeoutSeconds: 540,
-        memory: '2GB',
-    })
-    .https.onCall(async () => {
+        memory: '2GiB',
+        secrets: [githubToken],
+    },
+    async () => {
         const shouldUpdateData = await shouldUpdate()
 
         if (shouldUpdateData) {
@@ -39,7 +42,8 @@ export const updateHacsPackages = functions
         }
 
         return false
-    })
+    }
+)
 
 type Data = {
     updatedAt: Timestamp
@@ -60,7 +64,6 @@ const shouldUpdate = async (): Promise<boolean> => {
 
     const updatedAt = data.updatedAt
     const status = data.status
-    // Check last update time, see if more than 24h
     const twentyFoursHoursInMillis = 86400000
     if (!updatedAt || updatedAt.toMillis() + twentyFoursHoursInMillis < Date.now()) {
         console.log('Need update, was a long time ago')

@@ -1,4 +1,4 @@
-import fetch from 'node-fetch'
+import { defineSecret } from 'firebase-functions/params'
 import {
     Category,
     CategoryKey,
@@ -7,7 +7,9 @@ import {
     RepoInfo,
     RepoStats,
 } from '../types'
-import * as functions from 'firebase-functions'
+
+const githubToken = defineSecret("GITHUB_TOKEN")
+
 
 const CATEGORIES: Category[] = [
     {
@@ -53,7 +55,7 @@ export const getSortedPackages = async (): Promise<PackagesByCategory[]> => {
 
     for (const packagesByCat of packagesByCategories) {
         for (const item of packagesByCat.packages) {
-            const repoData = await getRepoDate(item.name)
+            const repoData = await getRepoData(item.name)
             item.name = repoData.name
             item.stats = repoData.stats
             item.info = repoData.infos
@@ -64,12 +66,12 @@ export const getSortedPackages = async (): Promise<PackagesByCategory[]> => {
 
 const getCategoryPackages = async (cat: CategoryKey): Promise<PackageName[]> => {
     const result = await fetch(BASE_URL + cat)
-    const list: PackageName[] = await result.json()
+    const list: PackageName[] = await result.json() as PackageName[]
 
     return list.map((p) => p.toLowerCase())
 }
 
-const getRepoDate = async (
+const getRepoData = async (
     packageName: PackageName
 ): Promise<{
     stats: RepoStats
@@ -78,14 +80,15 @@ const getRepoDate = async (
 }> => {
     const result = await fetch(BASE_GITHUB_API_URL + packageName, {
         headers: {
-            Authorization: `token ${functions.config().github.token}`,
+            Authorization: `token ${githubToken.value()}`,
         },
     })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data: any = await result.json()
 
-    if (result.status >= 400) {
+    if (!result.ok) {
         console.error('GitHub Request failed, status:' + result.status, data)
-        throw new Error('GitHub Request failed, ' + String(result))
+        throw new Error('GitHub Request failed, status: ' + result.status)
     }
 
     return {
