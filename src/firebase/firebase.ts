@@ -4,21 +4,20 @@ import 'firebase/analytics'
 import 'firebase/functions'
 
 const config = {
-    apiKey: process.env.REACT_APP_API_KEY,
-    authDomain: process.env.REACT_APP_AUTH_DOMAIN,
-    databaseURL: process.env.REACT_APP_DATABASE_URL,
-    projectId: process.env.REACT_APP_PROJECT_ID,
-    appId: process.env.REACT_APP_APPID,
+    apiKey: import.meta.env.VITE_API_KEY,
+    authDomain: import.meta.env.VITE_AUTH_DOMAIN,
+    databaseURL: import.meta.env.VITE_DATABASE_URL,
+    projectId: import.meta.env.VITE_PROJECT_ID,
+    appId: import.meta.env.VITE_APPID,
 }
 
 const firebaseMain = firebase.initializeApp(config)
 export const firestore = firebaseMain.firestore()
 
-// firebase.functions().useFunctionsEmulator('http://localhost:5000')
 export const functions = {
-    updateHacsPackages: firebase.functions().httpsCallable('updateHacsPackages'),
+    updateHacsPackages: firebase.functions().httpsCallable('updateHacsPackagesv2'),
 }
 
-if (process.env.NODE_ENV === 'production' && process.env.REACT_APP_MEASUREMENT_ID) {
+if (import.meta.env.PROD && import.meta.env.VITE_MEASUREMENT_ID) {
     firebase.analytics()
 }
