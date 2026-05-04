@@ -25,20 +25,38 @@ export const updateHacsPackagesv2 = onCall(
                 { merge: true }
             )
 
-            const packages = await getSortedPackages()
+            try {
+                const packages = await getSortedPackages()
 
-            await db
-                .collection('data')
-                .doc('document')
-                .set(
-                    {
-                        status: STATUS_UPDATED,
-                        updatedAt: serverTimestamp(),
-                        data: JSON.stringify(packages),
-                    },
+                console.log('Updating database with ' + packages.length + ' categories')
+                const batch = db.batch()
+                const docRef = db.collection('data').doc('document')
+
+                batch.set(docRef, {
+                    status: STATUS_UPDATED,
+                    updatedAt: serverTimestamp(),
+                    categories: packages.map((p) => p.category.key),
+                }, { merge: true })
+
+                for (const packagesByCat of packages) {
+                    const catRef = docRef.collection('categories').doc(packagesByCat.category.key)
+                    batch.set(catRef, {
+                        category: packagesByCat.category,
+                        data: JSON.stringify(packagesByCat.packages),
+                    })
+                }
+
+                await batch.commit()
+                console.log('Database updated')
+                return true
+            } catch (error) {
+                console.error('Failed to update packages:', error)
+                await db.collection('data').doc('document').set(
+                    { status: STATUS_ERROR },
                     { merge: true }
                 )
-            return true
+                throw error
+            }
         }
 
         return false
@@ -52,6 +70,7 @@ type Data = {
 
 const STATUS_UPDATING = 'updating'
 const STATUS_UPDATED = 'updated'
+const STATUS_ERROR = 'error'
 
 const shouldUpdate = async (): Promise<boolean> => {
     const result = await db.collection('data').doc('document').get()
