@@ -1,5 +1,5 @@
-import React from 'react'
-import { Link, Typography } from '@material-ui/core'
+import React, { useState } from 'react'
+import { Button, Link, Typography } from '@material-ui/core'
 import { Package } from './types'
 import StarRateIcon from '@material-ui/icons/StarRate'
 import VisibilityIcon from '@material-ui/icons/Visibility'
@@ -10,6 +10,7 @@ import CopyrightIcon from '@material-ui/icons/Copyright'
 import CalendarTodayIcon from '@material-ui/icons/CalendarToday';
 import { makeStyles } from '@material-ui/core/styles'
 import {DateTime} from 'luxon'
+import PackageReadme from './components/PackageReadme'
 
 type PackageItemProps = {
     packageItem: Package
@@ -41,6 +42,7 @@ const useStyles = makeStyles((theme) => ({
 
 const PackageItem = ({ packageItem }: PackageItemProps) => {
     const classes = useStyles()
+    const [readmeOpen, setReadmeOpen] = useState(false)
 
     return (
         <div className={classes.container}>
@@ -86,6 +88,10 @@ const PackageItem = ({ packageItem }: PackageItemProps) => {
                     {packageItem.stats?.updatedAtLuxon?.toRelative()}
                 </Typography>
             </div>
+            <Button size="small" onClick={() => setReadmeOpen(!readmeOpen)} aria-expanded={readmeOpen}>
+                {readmeOpen ? 'Hide README' : 'Show README'}
+            </Button>
+            {readmeOpen && <PackageReadme fullName={packageItem.fullName} url={packageItem.info?.url} />}
         </div>
     )
 }
