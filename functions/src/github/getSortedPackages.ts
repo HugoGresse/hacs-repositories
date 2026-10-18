@@ -7,7 +7,7 @@ import {
     PackagesByCategory,
 } from '../types'
 
-const githubToken = defineSecret('GITHUB_TOKEN')
+export const githubToken = defineSecret('GITHUB_TOKEN')
 
 const CATEGORIES: Category[] = [
     {
@@ -41,6 +41,7 @@ const HACS_DATA_BASE_URL = 'https://data-v2.hacs.xyz/'
 const GITHUB_GRAPHQL_URL = 'https://api.github.com/graphql'
 const BATCH_SIZE = 40
 const CONCURRENCY = 3
+const MAX_ATTEMPTS = 3
 
 const getGithubToken = (): string => {
     try {
@@ -49,6 +50,8 @@ const getGithubToken = (): string => {
         return process.env.GITHUB_TOKEN || ''
     }
 }
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export const getSortedPackages = async (): Promise<PackagesByCategory[]> => {
     const packagesByCategories: PackagesByCategory[] = []
@@ -60,29 +63,22 @@ export const getSortedPackages = async (): Promise<PackagesByCategory[]> => {
         packagesByCategories.push({
             category: category,
             packages: packages.map((p) => ({
-                name: p.includes('/') ? p.split('/')[1] : p,
+                name: getRepoName(p),
                 fullName: p,
             })),
         })
     }
 
-    const totalPackages = packagesByCategories.reduce((sum, cat) => sum + cat.packages.length, 0)
-    console.log(`Populating metadata for ${totalPackages} packages (has GitHub token: ${Boolean(token)})`)
+    const allPackages = packagesByCategories.flatMap((cat) => cat.packages)
+    console.log(`Populating metadata for ${allPackages.length} packages (has GitHub token: ${Boolean(token)})`)
 
-    // Attempt GraphQL batch fetching if GitHub token is present
     if (token) {
-        try {
-            console.log(`Starting GraphQL batch fetch (batch size: ${BATCH_SIZE}, concurrency: ${CONCURRENCY})`)
-            for (const packagesByCat of packagesByCategories) {
-                await fetchCategoryPackagesMetadataGraphQL(packagesByCat.packages, token)
-            }
-            console.log('GraphQL batch fetch finished successfully')
-        } catch (error) {
-            console.warn('GraphQL batch fetch encountered an error, will supplement with HACS data-v2 fallback:', error)
-        }
+        console.log(`Starting GraphQL batch fetch (batch size: ${BATCH_SIZE}, concurrency: ${CONCURRENCY})`)
+        await fetchPackagesMetadataGraphQL(allPackages, token)
     }
 
-    // Check if any packages are missing metadata (or if token was not available / GraphQL failed)
+    // Packages without metadata (no token, GraphQL failure, missing repo) are supplemented by HACS data-v2.
+    // Packages still missing afterwards keep `stats` undefined and are hidden by the frontend.
     for (const packagesByCat of packagesByCategories) {
         const missingCount = packagesByCat.packages.filter((p) => !p.stats).length
         if (missingCount > 0) {
@@ -96,29 +92,34 @@ export const getSortedPackages = async (): Promise<PackagesByCategory[]> => {
     return packagesByCategories
 }
 
+const getRepoName = (fullName: string): PackageName =>
+    fullName.includes('/') ? fullName.split('/')[1] : fullName
+
+const fetchPackageList = async (url: string): Promise<PackageName[] | null> => {
+    try {
+        const result = await fetch(url)
+        if (result.ok) {
+            const list = (await result.json()) as PackageName[]
+            return list.map((p) => p.toLowerCase())
+        }
+        console.warn(`Failed to fetch package list ${url}, status: ${result.status}`)
+    } catch (error) {
+        console.warn(`Failed to fetch package list ${url}:`, error)
+    }
+    return null
+}
+
 const getCategoryPackages = async (cat: CategoryKey): Promise<PackageName[]> => {
-    try {
-        const result = await fetch(BASE_URL + cat)
-        if (result.ok) {
-            const list: PackageName[] = (await result.json()) as PackageName[]
-            return list.map((p) => p.toLowerCase())
-        }
-    } catch (error) {
-        console.warn(`Failed to fetch default list for category "${cat}", trying HACS repositories endpoint:`, error)
-    }
+    const list =
+        (await fetchPackageList(BASE_URL + cat)) ??
+        (await fetchPackageList(`${HACS_DATA_BASE_URL}${cat}/repositories.json`))
 
-    // Fallback to HACS data-v2 repositories.json
-    try {
-        const result = await fetch(`${HACS_DATA_BASE_URL}${cat}/repositories.json`)
-        if (result.ok) {
-            const list: PackageName[] = (await result.json()) as PackageName[]
-            return list.map((p) => p.toLowerCase())
-        }
-    } catch (error) {
-        console.error(`Failed to fetch repositories for category "${cat}" from HACS data-v2:`, error)
+    // Throwing aborts the whole update so the last good data stays in Firestore
+    // instead of being overwritten by an empty category.
+    if (!list) {
+        throw new Error(`Unable to fetch package list for category "${cat}"`)
     }
-
-    return []
+    return list
 }
 
 type GraphQLRepoData = {
@@ -136,18 +137,38 @@ type GraphQLRepoData = {
     licenseInfo: { spdxId: string | null } | null
 }
 
-const fetchCategoryPackagesMetadataGraphQL = async (
-    packages: Package[],
-    token: string
-): Promise<void> => {
+type GraphQLResponse = {
+    data?: Record<string, GraphQLRepoData | null> | null
+    errors?: { type?: string; message: string }[]
+}
+
+const fetchPackagesMetadataGraphQL = async (packages: Package[], token: string): Promise<void> => {
     const batches: Package[][] = []
     for (let i = 0; i < packages.length; i += BATCH_SIZE) {
         batches.push(packages.slice(i, i + BATCH_SIZE))
     }
 
-    await processInBatches(batches, CONCURRENCY, async (batch) => {
-        await fetchGraphQLBatch(batch, token)
+    let failedBatches = 0
+    await processWithConcurrency(batches, CONCURRENCY, async (batch) => {
+        const success = await fetchGraphQLBatchWithRetry(batch, token)
+        if (!success) failedBatches++
     })
+    console.log(`GraphQL batch fetch finished (${batches.length - failedBatches}/${batches.length} batches succeeded)`)
+}
+
+const fetchGraphQLBatchWithRetry = async (batch: Package[], token: string): Promise<boolean> => {
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        try {
+            await fetchGraphQLBatch(batch, token)
+            return true
+        } catch (error) {
+            console.warn(`GraphQL batch failed (attempt ${attempt}/${MAX_ATTEMPTS}):`, error)
+            if (attempt < MAX_ATTEMPTS) {
+                await sleep(2000 * attempt)
+            }
+        }
+    }
+    return false
 }
 
 const fetchGraphQLBatch = async (batch: Package[], token: string): Promise<void> => {
@@ -197,10 +218,16 @@ const fetchGraphQLBatch = async (batch: Package[], token: string): Promise<void>
         throw new Error(`GitHub GraphQL API error status: ${response.status}`)
     }
 
-    const json = (await response.json()) as { data?: Record<string, GraphQLRepoData | null> }
-    const data = json.data || {}
+    const json = (await response.json()) as GraphQLResponse
 
-    for (const [alias, repo] of Object.entries<GraphQLRepoData | null>(data)) {
+    // NOT_FOUND is expected for deleted/private repos (data is null for that alias),
+    // anything else (RATE_LIMITED, query errors, ...) means the batch result is unreliable.
+    const unexpectedErrors = (json.errors ?? []).filter((e) => e.type !== 'NOT_FOUND')
+    if (unexpectedErrors.length > 0) {
+        throw new Error(`GitHub GraphQL errors: ${unexpectedErrors.map((e) => e.type ?? e.message).join(', ')}`)
+    }
+
+    for (const [alias, repo] of Object.entries(json.data ?? {})) {
         const pkg = indexMap.get(alias)
         if (pkg && repo) {
             pkg.name = repo.name || pkg.name
@@ -210,7 +237,7 @@ const fetchGraphQLBatch = async (batch: Package[], token: string): Promise<void>
                 watchers: repo.watchers?.totalCount ?? 0,
                 openIssues: repo.issues?.totalCount ?? 0,
                 updatedAt: repo.updatedAt || new Date().toISOString(),
-                createdAt: repo.createdAt || new Date().toISOString(),
+                createdAt: repo.createdAt ?? undefined,
             }
             pkg.info = {
                 description: repo.description ?? '',
@@ -235,9 +262,12 @@ type HacsDataV2Item = {
 const applyHacsDataV2Fallback = async (cat: CategoryKey, packages: Package[]): Promise<void> => {
     try {
         const res = await fetch(`${HACS_DATA_BASE_URL}${cat}/data.json`)
-        if (!res.ok) return
+        if (!res.ok) {
+            console.warn(`HACS data-v2 fallback for ${cat} failed, status: ${res.status}`)
+            return
+        }
 
-        const data: Record<string, HacsDataV2Item> = (await res.json()) as Record<string, HacsDataV2Item>
+        const data = (await res.json()) as Record<string, HacsDataV2Item>
         const hacsMap = new Map<string, HacsDataV2Item>()
 
         for (const item of Object.values(data)) {
@@ -247,39 +277,21 @@ const applyHacsDataV2Fallback = async (cat: CategoryKey, packages: Package[]): P
         }
 
         for (const pkg of packages) {
-            if (!pkg.stats) {
-                const item = hacsMap.get(pkg.fullName.toLowerCase())
-                if (item) {
-                    pkg.name = item.manifest_name || item.domain || pkg.name
-                    pkg.stats = {
-                        stars: item.stargazers_count ?? 0,
-                        forks: 0,
-                        watchers: 0,
-                        openIssues: item.open_issues ?? 0,
-                        updatedAt: item.last_updated ?? new Date().toISOString(),
-                        createdAt: item.last_updated ?? new Date().toISOString(),
-                    }
-                    pkg.info = {
-                        description: item.description ?? '',
-                        url: `https://github.com/${pkg.fullName}`,
-                        homepageUrl: `https://github.com/${pkg.fullName}`,
-                    }
-                } else {
-                    // Default fallback stats so filtering/sorting doesn't crash on undefined
-                    pkg.stats = {
-                        stars: 0,
-                        forks: 0,
-                        watchers: 0,
-                        openIssues: 0,
-                        updatedAt: new Date().toISOString(),
-                        createdAt: new Date().toISOString(),
-                    }
-                    pkg.info = {
-                        description: '',
-                        url: `https://github.com/${pkg.fullName}`,
-                        homepageUrl: `https://github.com/${pkg.fullName}`,
-                    }
-                }
+            const item = pkg.stats ? undefined : hacsMap.get(pkg.fullName.toLowerCase())
+            if (!item?.last_updated) continue
+
+            // data-v2 has no fork/watcher counts nor creation date: forks/watchers are 0, createdAt is left empty.
+            pkg.stats = {
+                stars: item.stargazers_count ?? 0,
+                forks: 0,
+                watchers: 0,
+                openIssues: item.open_issues ?? 0,
+                updatedAt: item.last_updated,
+            }
+            pkg.info = {
+                description: item.description ?? '',
+                url: `https://github.com/${pkg.fullName}`,
+                homepageUrl: '',
             }
         }
     } catch (error) {
@@ -287,13 +299,18 @@ const applyHacsDataV2Fallback = async (cat: CategoryKey, packages: Package[]): P
     }
 }
 
-const processInBatches = async <T>(
+// Runs `fn` over `items` with at most `concurrency` calls in flight at a time.
+const processWithConcurrency = async <T>(
     items: T[],
-    batchSize: number,
+    concurrency: number,
     fn: (item: T) => Promise<void>
 ): Promise<void> => {
-    for (let i = 0; i < items.length; i += batchSize) {
-        const batch = items.slice(i, i + batchSize)
-        await Promise.all(batch.map(fn))
+    let next = 0
+    const worker = async () => {
+        while (next < items.length) {
+            const item = items[next++]
+            await fn(item)
+        }
     }
+    await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, worker))
 }

@@ -43,7 +43,7 @@ export const getPackagesFromFirestore = async (): Promise<PackagesLoadResult> =>
                         packageCopy.stats = {
                             ...pack.stats,
                             updatedAtLuxon: DateTime.fromISO(pack.stats.updatedAt),
-                            createdAtLuxon: DateTime.fromISO(pack.stats.createdAt),
+                            createdAtLuxon: pack.stats.createdAt ? DateTime.fromISO(pack.stats.createdAt) : undefined,
                         }
                     }
                     if (pack.info) {

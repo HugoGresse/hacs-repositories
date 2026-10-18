@@ -22,7 +22,7 @@ export type RepoStats = {
     openIssues: number
     updatedAt: string
     updatedAtLuxon?: DateTime
-    createdAt: string
+    createdAt?: string
     createdAtLuxon?: DateTime
 }
 export type RepoInfo = {

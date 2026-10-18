@@ -1,15 +1,18 @@
 import { onCall } from 'firebase-functions/v2/https'
 import { onSchedule } from 'firebase-functions/v2/scheduler'
-import { getSortedPackages } from './github/getSortedPackages'
+import { getSortedPackages, githubToken } from './github/getSortedPackages'
 import { db, serverTimestamp } from './firebase'
 import { Timestamp } from 'firebase-admin/firestore'
-import { defineSecret } from 'firebase-functions/params'
-
-const githubToken = defineSecret('GITHUB_TOKEN')
 
 const STATUS_UPDATING = 'updating'
 const STATUS_UPDATED = 'updated'
 const STATUS_ERROR = 'error'
+
+const ONE_HOUR_IN_MILLIS = 3600000
+const TWENTY_FOUR_HOURS_IN_MILLIS = 24 * ONE_HOUR_IN_MILLIS
+// The scheduler fires every 24h but updatedAt is written at the end of a run, so a strict 24h
+// threshold would skip every other scheduled run. 20h leaves room for run duration and drift.
+const SCHEDULED_MIN_AGE_IN_MILLIS = 20 * ONE_HOUR_IN_MILLIS
 
 type Data = {
     updatedAt?: Timestamp
@@ -17,30 +20,22 @@ type Data = {
     status?: string
 }
 
-const shouldUpdate = async (): Promise<boolean> => {
-    const result = await db.collection('data').doc('document').get()
-
-    if (!result || !result.exists) {
+const shouldUpdate = (data: Data | undefined, minAgeMillis: number): boolean => {
+    if (!data) {
         return true
     }
 
-    const data = result.data() as Data
-
-    const updatedAt = data.updatedAt
-    const updatingAt = data.updatingAt
-    const status = data.status
-    const twentyFourHoursInMillis = 86400000
-    const oneHourInMillis = 3600000
+    const { updatedAt, updatingAt, status } = data
 
     if (status === STATUS_UPDATING) {
-        if (updatingAt && updatingAt.toMillis() + oneHourInMillis > Date.now()) {
+        if (updatingAt && updatingAt.toMillis() + ONE_HOUR_IN_MILLIS > Date.now()) {
             console.log('Current update in progress, abort')
             return false
         }
         console.log('Previous update timed out or stalled (> 1h), allowing update')
     }
 
-    if (!updatedAt || updatedAt.toMillis() + twentyFourHoursInMillis < Date.now()) {
+    if (!updatedAt || updatedAt.toMillis() + minAgeMillis < Date.now()) {
         console.log('Need update, was a long time ago')
         return true
     }
@@ -48,19 +43,31 @@ const shouldUpdate = async (): Promise<boolean> => {
     return false
 }
 
-export const executeUpdate = async (force: boolean = false): Promise<boolean> => {
-    const shouldUpdateData = force || (await shouldUpdate())
-
-    if (shouldUpdateData) {
-        console.log('Update needed right now')
-
-        await db.collection('data').doc('document').set(
+// Checks and claims the update lock atomically so concurrent triggers (scheduler + manual) don't both run.
+const claimUpdate = async (minAgeMillis: number): Promise<boolean> => {
+    const docRef = db.collection('data').doc('document')
+    return db.runTransaction(async (transaction) => {
+        const snapshot = await transaction.get(docRef)
+        if (!shouldUpdate(snapshot.data() as Data | undefined, minAgeMillis)) {
+            return false
+        }
+        transaction.set(
+            docRef,
             {
                 status: STATUS_UPDATING,
                 updatingAt: serverTimestamp(),
             },
             { merge: true }
         )
+        return true
+    })
+}
+
+export const executeUpdate = async (
+    minAgeMillis: number = TWENTY_FOUR_HOURS_IN_MILLIS
+): Promise<boolean> => {
+    if (await claimUpdate(minAgeMillis)) {
+        console.log('Update needed right now')
 
         try {
             const packages = await getSortedPackages()
@@ -90,6 +97,8 @@ export const executeUpdate = async (force: boolean = false): Promise<boolean> =>
                         category: packagesByCat.category,
                         hasChunks: true,
                         chunkCount,
+                        // Keeps clients built before chunking (which JSON.parse `data`) from crashing.
+                        data: '[]',
                     })
 
                     for (let i = 0; i < chunkCount; i++) {
@@ -149,6 +158,6 @@ export const autoUpdateHacsPackages = onSchedule(
     },
     async () => {
         console.log('Scheduled auto-update triggered')
-        await executeUpdate()
+        await executeUpdate(SCHEDULED_MIN_AGE_IN_MILLIS)
     }
 )
