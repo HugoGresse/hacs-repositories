@@ -40,8 +40,13 @@ const BASE_URL = 'https://raw.githubusercontent.com/hacs/default/master/'
 const HACS_DATA_BASE_URL = 'https://data-v2.hacs.xyz/'
 const GITHUB_GRAPHQL_URL = 'https://api.github.com/graphql'
 const BATCH_SIZE = 40
-const CONCURRENCY = 3
-const MAX_ATTEMPTS = 3
+// GitHub recommends serial requests to avoid secondary rate limits (403/429).
+const CONCURRENCY = 1
+const MAX_ATTEMPTS = 4
+// Wait applied on a secondary rate limit without retry-after header, per GitHub docs ("at least one minute").
+const DEFAULT_RATE_LIMIT_WAIT_MS = 60_000
+// GraphQL must stop early enough for the data-v2 fallback and Firestore write within the 540s function timeout.
+const GRAPHQL_TIME_BUDGET_MS = 6 * 60_000
 
 const getGithubToken = (): string => {
     try {
@@ -142,33 +147,82 @@ type GraphQLResponse = {
     errors?: { type?: string; message: string }[]
 }
 
+class RateLimitError extends Error {
+    constructor(message: string, readonly retryAfterMs: number) {
+        super(message)
+    }
+}
+
+// Shared across workers: a rate limit pauses every request, and nothing waits past the deadline.
+type GraphQLFetchState = {
+    deadline: number
+    pausedUntil: number
+}
+
 const fetchPackagesMetadataGraphQL = async (packages: Package[], token: string): Promise<void> => {
     const batches: Package[][] = []
     for (let i = 0; i < packages.length; i += BATCH_SIZE) {
         batches.push(packages.slice(i, i + BATCH_SIZE))
     }
 
+    const state: GraphQLFetchState = { deadline: Date.now() + GRAPHQL_TIME_BUDGET_MS, pausedUntil: 0 }
     let failedBatches = 0
     await processWithConcurrency(batches, CONCURRENCY, async (batch) => {
-        const success = await fetchGraphQLBatchWithRetry(batch, token)
+        const success = await fetchGraphQLBatchWithRetry(batch, token, state)
         if (!success) failedBatches++
     })
     console.log(`GraphQL batch fetch finished (${batches.length - failedBatches}/${batches.length} batches succeeded)`)
 }
 
-const fetchGraphQLBatchWithRetry = async (batch: Package[], token: string): Promise<boolean> => {
+const fetchGraphQLBatchWithRetry = async (
+    batch: Package[],
+    token: string,
+    state: GraphQLFetchState
+): Promise<boolean> => {
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        const waitMs = state.pausedUntil - Date.now()
+        if (state.pausedUntil > state.deadline || Date.now() >= state.deadline) {
+            return false
+        }
+        if (waitMs > 0) {
+            await sleep(waitMs)
+        }
+
         try {
             await fetchGraphQLBatch(batch, token)
             return true
         } catch (error) {
-            console.warn(`GraphQL batch failed (attempt ${attempt}/${MAX_ATTEMPTS}):`, error)
-            if (attempt < MAX_ATTEMPTS) {
-                await sleep(2000 * attempt)
+            if (error instanceof RateLimitError) {
+                state.pausedUntil = Math.max(state.pausedUntil, Date.now() + error.retryAfterMs)
+                console.warn(
+                    `GraphQL rate limited (attempt ${attempt}/${MAX_ATTEMPTS}), pausing ${Math.round(error.retryAfterMs / 1000)}s: ${error.message}`
+                )
+                if (state.pausedUntil > state.deadline) {
+                    console.warn('Rate limit pause exceeds GraphQL time budget, remaining batches use HACS data-v2 fallback')
+                }
+            } else {
+                console.warn(`GraphQL batch failed (attempt ${attempt}/${MAX_ATTEMPTS}):`, error)
+                if (attempt < MAX_ATTEMPTS) {
+                    await sleep(2000 * attempt)
+                }
             }
         }
     }
     return false
+}
+
+// Delay before retrying, from GitHub rate limit headers:
+// https://docs.github.com/en/graphql/overview/rate-limits-and-query-limits-for-the-graphql-api
+const getRateLimitWaitMs = (headers: Headers): number => {
+    const retryAfter = Number(headers.get('retry-after'))
+    if (retryAfter > 0) {
+        return retryAfter * 1000
+    }
+    const reset = Number(headers.get('x-ratelimit-reset'))
+    if (headers.get('x-ratelimit-remaining') === '0' && reset > 0) {
+        return Math.max(0, reset * 1000 - Date.now()) + 1000
+    }
+    return DEFAULT_RATE_LIMIT_WAIT_MS
 }
 
 const fetchGraphQLBatch = async (batch: Package[], token: string): Promise<void> => {
@@ -214,11 +268,21 @@ const fetchGraphQLBatch = async (batch: Package[], token: string): Promise<void>
         body: JSON.stringify({ query }),
     })
 
+    if (response.status === 403 || response.status === 429) {
+        const body = await response.text()
+        throw new RateLimitError(`status ${response.status} ${body.slice(0, 200)}`, getRateLimitWaitMs(response.headers))
+    }
+
     if (!response.ok) {
         throw new Error(`GitHub GraphQL API error status: ${response.status}`)
     }
 
     const json = (await response.json()) as GraphQLResponse
+
+    // Primary rate limit exhaustion is reported as HTTP 200 with a RATE_LIMITED error.
+    if (json.errors?.some((e) => e.type === 'RATE_LIMITED')) {
+        throw new RateLimitError('RATE_LIMITED', getRateLimitWaitMs(response.headers))
+    }
 
     // NOT_FOUND is expected for deleted/private repos (data is null for that alias),
     // anything else (RATE_LIMITED, query errors, ...) means the batch result is unreliable.
