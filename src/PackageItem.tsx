@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link, Typography } from '@material-ui/core'
-import { Package } from '../functions/src/types'
+import { Package } from './types'
 import StarRateIcon from '@material-ui/icons/StarRate'
 import VisibilityIcon from '@material-ui/icons/Visibility'
 import MergeTypeIcon from '@material-ui/icons/MergeType'

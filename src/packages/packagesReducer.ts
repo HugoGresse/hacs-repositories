@@ -1,5 +1,5 @@
 import produce from 'immer'
-import { Category, PackagesByCategory } from '../../functions/src/types'
+import { Category, PackagesByCategory } from '../types'
 import {
     FILTER_INIT_COMPLETED,
     FilterFork,

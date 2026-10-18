@@ -1,4 +1,4 @@
-import { Category, PackagesByCategory, Status } from '../../functions/src/types'
+import { Category, PackagesByCategory } from '../types'
 import { DateTime } from 'luxon'
 
 export const LOAD_PACKAGES_START = 'packages/load/start'
@@ -32,7 +32,6 @@ export type FilterSelectTypes = typeof FilterPackageCategories
 
 export type PackagesLoadResult = {
     packages?: PackagesByCategory[]
-    status?: Status
     updatedAt?: DateTime
     loadSuccess: boolean
 }

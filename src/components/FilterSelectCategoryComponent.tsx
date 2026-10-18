@@ -1,6 +1,6 @@
 import React from 'react'
 import { Chip, FormControl, MenuItem, Select } from '@material-ui/core'
-import { Category } from '../../functions/src/types'
+import { Category } from '../types'
 import { makeStyles } from '@material-ui/core/styles'
 import FilterName from './FilterName'
 import { HacsInput } from './HacsInputBase'

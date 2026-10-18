@@ -1,4 +1,4 @@
-import { getPackagesFromFirestore } from '../firebase/getPackagesFromFirestore'
+import { getPackages } from './getPackages'
 import {
     FILTER_INIT_COMPLETED,
     FilterFork,
@@ -21,7 +21,7 @@ export const loadPackages = () => async (
         type: LOAD_PACKAGES_START,
     })
 
-    const result = await getPackagesFromFirestore()
+    const result = await getPackages()
 
     dispatch({
         type: LOAD_PACKAGES_END,
