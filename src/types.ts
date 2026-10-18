@@ -1,4 +1,4 @@
-import { DateTime } from 'luxon'
+import type { DateTime } from 'luxon'
 
 export type PackageName = string
 export type PackageFullName = string
@@ -32,7 +32,8 @@ export type RepoInfo = {
     homepageUrl: string
 }
 
-export enum Status {
-    UPDATING = 'updating',
-    UPDATED = 'updated',
+// Shape of `packages.json`, generated daily by scripts/update-packages.ts and served next to the app.
+export type PackagesData = {
+    updatedAt: string
+    categories: PackagesByCategory[]
 }

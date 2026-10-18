@@ -1,6 +1,6 @@
 import { PackagesState } from './packagesReducer'
 import { createSelector } from 'reselect'
-import { Package, PackagesByCategory } from '../../functions/src/types'
+import { Package, PackagesByCategory } from '../types'
 import { State } from '../rootReducer'
 import {
     FilterFork,

@@ -6,15 +6,17 @@ Search within HACS repositories, like you do with NPM. This provide filters and 
 
 #### Use it: [hacs-repositories.web.app](https://hacs-repositories.web.app/)
 
-# Dev setup (to be completed)
+# Dev setup
 
-1. Clone, install dependencies, also within `functions/`
-2. Add a function env with `github.token` and your GitHub API token: `firebase functions:config:set github.token=`
-3. Deploy the functions (`firebase deploy --only functions`) OR update `src/firebase/firebase.ts` to use local function and run them locally.
-4. For the front: `npm start` will run the website and open `localhost:3000`
-5. Within the website, the first tie your database will be empty, create it on [console.firebase.google.com](https://console.firebase.google.com) and next, update it from the website (click on Last update then Request update)
-6. Your good to go!
-7. Deploy: `npm run deploy` will build functions and web app, and deploy to Firebase
+The site is static: a daily GitHub Actions job (`.github/workflows/update.yml`) runs
+`scripts/update-packages.ts`, which fetches the HACS default repositories and their GitHub metadata
+into `public/packages.json`, then builds and deploys the site to Firebase Hosting.
+
+1. `npm ci`
+2. Generate the data (Node 24, a GitHub token avoids falling back to HACS data-v2 stats):
+   `GITHUB_TOKEN=$(gh auth token) npm run update-packages` (takes ~6 min, requests are paced to stay under GitHub rate limits)
+3. `npm run dev`
+4. Deploy manually: `npm run deploy` (or run the `update` workflow from the Actions tab)
 
 # About
 

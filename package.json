@@ -7,13 +7,13 @@
         "dev": "vite",
         "build": "tsc -b && vite build",
         "preview": "vite preview",
-        "deploy": "npm run build && firebase deploy"
+        "update-packages": "node scripts/update-packages.ts",
+        "deploy": "npm run build && firebase deploy --only hosting"
     },
     "dependencies": {
         "@material-ui/core": "^4.11.0",
         "@material-ui/icons": "^4.9.1",
         "@material-ui/lab": "^4.0.0-alpha.56",
-        "firebase": "^7.21.1",
         "immer": "^7.0.9",
         "lodash": "^4.17.20",
         "luxon": "^3.5.0",
@@ -28,15 +28,15 @@
     "devDependencies": {
         "@types/lodash": "^4.14.162",
         "@types/luxon": "^3.4.0",
-        "@types/react-lazyload": "^3.0.0",
-        "@types/react-redux": "^7.1.9",
         "@types/node": "^22.0.0",
         "@types/react": "^16.14.3",
         "@types/react-dom": "^16.9.10",
+        "@types/react-lazyload": "^3.0.0",
+        "@types/react-redux": "^7.1.9",
         "@vitejs/plugin-react": "^4.3.0",
+        "prettier": "^2.1.2",
         "typescript": "^5.5.0",
-        "vite": "^6.0.0",
-        "prettier": "^2.1.2"
+        "vite": "^6.0.0"
     },
     "lint-staged": {
         "*.{ts,js,json,css,md}": [

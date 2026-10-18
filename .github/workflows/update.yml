@@ -1,0 +1,58 @@
+name: update
+
+# Fetches the HACS repositories with their GitHub metadata, builds the site with the fresh
+# packages.json and deploys it to Firebase Hosting. A failed fetch fails the job, so the
+# previously deployed data stays online.
+on:
+  schedule:
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - 'src/**'
+      - 'scripts/**'
+      - 'public/**'
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.ts'
+      - 'tsconfig.json'
+      - 'firebase.json'
+      - '.github/workflows/update.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  update:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: check out the repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - name: set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1  # v7.1.0
+        with:
+          node-version-file: .nvmrc
+      - name: install dependencies
+        run: npm ci
+      - name: fetch packages from HACS and GitHub
+        run: npm run update-packages
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: build the site
+        run: npm run build
+      - name: deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@500ac625ca2dd40cbd15f7659af953801858032a  # v0.11.0
+        with:
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: hacs-repositories
+          channelId: live

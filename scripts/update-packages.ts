@@ -1,100 +1,67 @@
-import { defineSecret } from 'firebase-functions/params'
-import {
-    Category,
-    CategoryKey,
-    Package,
-    PackageName,
-    PackagesByCategory,
-} from '../types'
-
-export const githubToken = defineSecret('GITHUB_TOKEN')
+// Fetches every HACS default repository with its GitHub metadata and writes `packages.json`,
+// served statically next to the app. Run daily by .github/workflows/update.yml.
+//
+// Usage: GITHUB_TOKEN=... node scripts/update-packages.ts [output path, default public/packages.json]
+import { mkdir, writeFile } from 'node:fs/promises'
+import { dirname } from 'node:path'
+import type { Category, CategoryKey, Package, PackageName, PackagesByCategory, PackagesData } from '../src/types.ts'
 
 const CATEGORIES: Category[] = [
-    {
-        key: 'integration',
-        name: 'Integration',
-    },
-    {
-        key: 'plugin',
-        name: 'Plugin',
-    },
-    {
-        key: 'appdaemon',
-        name: 'AppDaemon Apps',
-    },
-    {
-        key: 'netdaemon',
-        name: 'NetDaemon Apps',
-    },
-    {
-        key: 'python_script',
-        name: 'Python script',
-    },
-    {
-        key: 'theme',
-        name: 'Theme',
-    },
+    { key: 'integration', name: 'Integration' },
+    { key: 'plugin', name: 'Plugin' },
+    { key: 'appdaemon', name: 'AppDaemon Apps' },
+    { key: 'netdaemon', name: 'NetDaemon Apps' },
+    { key: 'python_script', name: 'Python script' },
+    { key: 'theme', name: 'Theme' },
 ]
 
 const BASE_URL = 'https://raw.githubusercontent.com/hacs/default/master/'
 const HACS_DATA_BASE_URL = 'https://data-v2.hacs.xyz/'
 const GITHUB_GRAPHQL_URL = 'https://api.github.com/graphql'
 const BATCH_SIZE = 40
-// GitHub recommends serial requests to avoid secondary rate limits (403/429).
-const CONCURRENCY = 1
-const MAX_ATTEMPTS = 4
+// Requests are serial and spaced out: back-to-back aliased queries trip GitHub's secondary rate limit
+// (GraphQL CPU time per minute) after ~30s. ~106 batches * 3s ≈ 5-6 min, fine for a daily job.
+const MIN_REQUEST_INTERVAL_MS = 3000
+const MAX_ATTEMPTS = 5
 // Wait applied on a secondary rate limit without retry-after header, per GitHub docs ("at least one minute").
 const DEFAULT_RATE_LIMIT_WAIT_MS = 60_000
-// GraphQL must stop early enough for the data-v2 fallback and Firestore write within the 540s function timeout.
-const GRAPHQL_TIME_BUDGET_MS = 6 * 60_000
-
-const getGithubToken = (): string => {
-    try {
-        return githubToken.value() || process.env.GITHUB_TOKEN || ''
-    } catch {
-        return process.env.GITHUB_TOKEN || ''
-    }
-}
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-export const getSortedPackages = async (): Promise<PackagesByCategory[]> => {
-    const packagesByCategories: PackagesByCategory[] = []
-    const token = getGithubToken()
+const main = async (): Promise<void> => {
+    const outputPath = process.argv[2] ?? 'public/packages.json'
+    const token = process.env.GITHUB_TOKEN ?? ''
 
-    console.log(`Fetching package lists for ${CATEGORIES.length} categories`)
+    const categories: PackagesByCategory[] = []
     for (const category of CATEGORIES) {
         const packages = await getCategoryPackages(category.key)
-        packagesByCategories.push({
-            category: category,
-            packages: packages.map((p) => ({
-                name: getRepoName(p),
-                fullName: p,
-            })),
+        categories.push({
+            category,
+            packages: packages.map((p) => ({ name: getRepoName(p), fullName: p })),
         })
     }
 
-    const allPackages = packagesByCategories.flatMap((cat) => cat.packages)
+    const allPackages = categories.flatMap((cat) => cat.packages)
     console.log(`Populating metadata for ${allPackages.length} packages (has GitHub token: ${Boolean(token)})`)
 
     if (token) {
-        console.log(`Starting GraphQL batch fetch (batch size: ${BATCH_SIZE}, concurrency: ${CONCURRENCY})`)
         await fetchPackagesMetadataGraphQL(allPackages, token)
     }
 
     // Packages without metadata (no token, GraphQL failure, missing repo) are supplemented by HACS data-v2.
     // Packages still missing afterwards keep `stats` undefined and are hidden by the frontend.
-    for (const packagesByCat of packagesByCategories) {
-        const missingCount = packagesByCat.packages.filter((p) => !p.stats).length
+    for (const cat of categories) {
+        const missingCount = cat.packages.filter((p) => !p.stats).length
         if (missingCount > 0) {
-            console.log(
-                `Category "${packagesByCat.category.key}" has ${missingCount}/${packagesByCat.packages.length} packages without metadata. Fetching HACS data-v2 fallback...`
-            )
-            await applyHacsDataV2Fallback(packagesByCat.category.key, packagesByCat.packages)
+            console.log(`Category "${cat.category.key}": ${missingCount}/${cat.packages.length} packages without metadata, using HACS data-v2`)
+            await applyHacsDataV2Fallback(cat.category.key, cat.packages)
         }
     }
 
-    return packagesByCategories
+    const data: PackagesData = { updatedAt: new Date().toISOString(), categories }
+    await mkdir(dirname(outputPath), { recursive: true })
+    await writeFile(outputPath, JSON.stringify(data))
+    console.log(`Wrote ${allPackages.length} packages to ${outputPath}`)
 }
 
 const getRepoName = (fullName: string): PackageName =>
@@ -119,8 +86,7 @@ const getCategoryPackages = async (cat: CategoryKey): Promise<PackageName[]> => 
         (await fetchPackageList(BASE_URL + cat)) ??
         (await fetchPackageList(`${HACS_DATA_BASE_URL}${cat}/repositories.json`))
 
-    // Throwing aborts the whole update so the last good data stays in Firestore
-    // instead of being overwritten by an empty category.
+    // Failing the job keeps the previously deployed packages.json instead of publishing an empty category.
     if (!list) {
         throw new Error(`Unable to fetch package list for category "${cat}"`)
     }
@@ -129,7 +95,6 @@ const getCategoryPackages = async (cat: CategoryKey): Promise<PackageName[]> => 
 
 type GraphQLRepoData = {
     name: string
-    nameWithOwner: string
     description: string | null
     url: string | null
     homepageUrl: string | null
@@ -148,15 +113,12 @@ type GraphQLResponse = {
 }
 
 class RateLimitError extends Error {
-    constructor(message: string, readonly retryAfterMs: number) {
-        super(message)
-    }
-}
+    retryAfterMs: number
 
-// Shared across workers: a rate limit pauses every request, and nothing waits past the deadline.
-type GraphQLFetchState = {
-    deadline: number
-    pausedUntil: number
+    constructor(message: string, retryAfterMs: number) {
+        super(message)
+        this.retryAfterMs = retryAfterMs
+    }
 }
 
 const fetchPackagesMetadataGraphQL = async (packages: Package[], token: string): Promise<void> => {
@@ -164,47 +126,32 @@ const fetchPackagesMetadataGraphQL = async (packages: Package[], token: string):
     for (let i = 0; i < packages.length; i += BATCH_SIZE) {
         batches.push(packages.slice(i, i + BATCH_SIZE))
     }
+    console.log(`Fetching GitHub metadata in ${batches.length} GraphQL batches of ${BATCH_SIZE}`)
 
-    const state: GraphQLFetchState = { deadline: Date.now() + GRAPHQL_TIME_BUDGET_MS, pausedUntil: 0 }
     let failedBatches = 0
-    await processWithConcurrency(batches, CONCURRENCY, async (batch) => {
-        const success = await fetchGraphQLBatchWithRetry(batch, token, state)
-        if (!success) failedBatches++
-    })
+    for (const [index, batch] of batches.entries()) {
+        if (!(await fetchGraphQLBatchWithRetry(batch, token))) failedBatches++
+        if ((index + 1) % 20 === 0) console.log(`  ${index + 1}/${batches.length} batches done`)
+    }
     console.log(`GraphQL batch fetch finished (${batches.length - failedBatches}/${batches.length} batches succeeded)`)
 }
 
-const fetchGraphQLBatchWithRetry = async (
-    batch: Package[],
-    token: string,
-    state: GraphQLFetchState
-): Promise<boolean> => {
+const fetchGraphQLBatchWithRetry = async (batch: Package[], token: string): Promise<boolean> => {
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-        const waitMs = state.pausedUntil - Date.now()
-        if (state.pausedUntil > state.deadline || Date.now() >= state.deadline) {
-            return false
-        }
-        if (waitMs > 0) {
-            await sleep(waitMs)
-        }
-
+        const startedAt = Date.now()
         try {
             await fetchGraphQLBatch(batch, token)
+            await sleep(Math.max(0, startedAt + MIN_REQUEST_INTERVAL_MS - Date.now()))
             return true
         } catch (error) {
             if (error instanceof RateLimitError) {
-                state.pausedUntil = Math.max(state.pausedUntil, Date.now() + error.retryAfterMs)
                 console.warn(
                     `GraphQL rate limited (attempt ${attempt}/${MAX_ATTEMPTS}), pausing ${Math.round(error.retryAfterMs / 1000)}s: ${error.message}`
                 )
-                if (state.pausedUntil > state.deadline) {
-                    console.warn('Rate limit pause exceeds GraphQL time budget, remaining batches use HACS data-v2 fallback')
-                }
+                await sleep(error.retryAfterMs)
             } else {
                 console.warn(`GraphQL batch failed (attempt ${attempt}/${MAX_ATTEMPTS}):`, error)
-                if (attempt < MAX_ATTEMPTS) {
-                    await sleep(2000 * attempt)
-                }
+                await sleep(2000 * attempt)
             }
         }
     }
@@ -238,7 +185,6 @@ const fetchGraphQLBatch = async (batch: Package[], token: string): Promise<void>
             queryParts.push(
                 `${alias}: repository(owner: ${JSON.stringify(owner)}, name: ${JSON.stringify(name)}) {
                     name
-                    nameWithOwner
                     description
                     url
                     homepageUrl
@@ -256,8 +202,6 @@ const fetchGraphQLBatch = async (batch: Package[], token: string): Promise<void>
 
     if (queryParts.length === 0) return
 
-    const query = `query {\n${queryParts.join('\n')}\n}`
-
     const response = await fetch(GITHUB_GRAPHQL_URL, {
         method: 'POST',
         headers: {
@@ -265,7 +209,7 @@ const fetchGraphQLBatch = async (batch: Package[], token: string): Promise<void>
             'User-Agent': 'hacs-repositories',
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ query }),
+        body: JSON.stringify({ query: `query {\n${queryParts.join('\n')}\n}` }),
     })
 
     if (response.status === 403 || response.status === 429) {
@@ -285,7 +229,7 @@ const fetchGraphQLBatch = async (batch: Package[], token: string): Promise<void>
     }
 
     // NOT_FOUND is expected for deleted/private repos (data is null for that alias),
-    // anything else (RATE_LIMITED, query errors, ...) means the batch result is unreliable.
+    // anything else (query errors, ...) means the batch result is unreliable.
     const unexpectedErrors = (json.errors ?? []).filter((e) => e.type !== 'NOT_FOUND')
     if (unexpectedErrors.length > 0) {
         throw new Error(`GitHub GraphQL errors: ${unexpectedErrors.map((e) => e.type ?? e.message).join(', ')}`)
@@ -316,8 +260,6 @@ const fetchGraphQLBatch = async (batch: Package[], token: string): Promise<void>
 type HacsDataV2Item = {
     full_name: string
     description?: string
-    manifest_name?: string
-    domain?: string
     stargazers_count?: number
     open_issues?: number
     last_updated?: string
@@ -333,7 +275,6 @@ const applyHacsDataV2Fallback = async (cat: CategoryKey, packages: Package[]): P
 
         const data = (await res.json()) as Record<string, HacsDataV2Item>
         const hacsMap = new Map<string, HacsDataV2Item>()
-
         for (const item of Object.values(data)) {
             if (item.full_name) {
                 hacsMap.set(item.full_name.toLowerCase(), item)
@@ -363,18 +304,4 @@ const applyHacsDataV2Fallback = async (cat: CategoryKey, packages: Package[]): P
     }
 }
 
-// Runs `fn` over `items` with at most `concurrency` calls in flight at a time.
-const processWithConcurrency = async <T>(
-    items: T[],
-    concurrency: number,
-    fn: (item: T) => Promise<void>
-): Promise<void> => {
-    let next = 0
-    const worker = async () => {
-        while (next < items.length) {
-            const item = items[next++]
-            await fn(item)
-        }
-    }
-    await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, worker))
-}
+await main()
