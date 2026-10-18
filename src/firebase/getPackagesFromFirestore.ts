@@ -18,27 +18,42 @@ export const getPackagesFromFirestore = async (): Promise<PackagesLoadResult> =>
         .collection('categories')
         .get()
 
-    const packagesByCategory: PackagesByCategory[] = categoriesSnapshot.docs.map((doc) => {
-        const catData = doc.data()
-        const packages: Package[] = JSON.parse(catData.data)
-        return {
-            category: catData.category,
-            packages: packages.map((pack) => {
-                const packageCopy = { ...pack }
-                if (pack.stats) {
-                    packageCopy.stats = {
-                        ...pack.stats,
-                        updatedAtLuxon: DateTime.fromISO(pack.stats.updatedAt),
-                        createdAtLuxon: DateTime.fromISO(pack.stats.createdAt),
+    const packagesByCategory: PackagesByCategory[] = await Promise.all(
+        categoriesSnapshot.docs.map(async (doc) => {
+            const catData = doc.data()
+            let rawPackages: Package[] = []
+
+            if (catData.hasChunks) {
+                const chunksSnapshot = await doc.ref.collection('chunks').orderBy('index').get()
+                const chunks = chunksSnapshot.docs.map((chunkDoc) => {
+                    const chunkData = chunkDoc.data()
+                    return JSON.parse(chunkData.data) as Package[]
+                })
+                const expectedChunks = catData.chunkCount ?? chunks.length
+                rawPackages = chunks.slice(0, expectedChunks).flat()
+            } else if (catData.data) {
+                rawPackages = JSON.parse(catData.data)
+            }
+
+            return {
+                category: catData.category,
+                packages: rawPackages.map((pack) => {
+                    const packageCopy = { ...pack }
+                    if (pack.stats) {
+                        packageCopy.stats = {
+                            ...pack.stats,
+                            updatedAtLuxon: DateTime.fromISO(pack.stats.updatedAt),
+                            createdAtLuxon: pack.stats.createdAt ? DateTime.fromISO(pack.stats.createdAt) : undefined,
+                        }
                     }
-                }
-                if (pack.info) {
-                    packageCopy.info = { ...pack.info }
-                }
-                return packageCopy
-            }),
-        }
-    })
+                    if (pack.info) {
+                        packageCopy.info = { ...pack.info }
+                    }
+                    return packageCopy
+                }),
+            }
+        })
+    )
 
     return {
         loadSuccess: true,
@@ -48,6 +63,6 @@ export const getPackagesFromFirestore = async (): Promise<PackagesLoadResult> =>
             return 0
         }),
         status: data.status,
-        updatedAt: DateTime.fromJSDate(data.updatedAt.toDate()),
+        updatedAt: data.updatedAt ? DateTime.fromJSDate(data.updatedAt.toDate()) : undefined,
     }
 }
